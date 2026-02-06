@@ -29,7 +29,7 @@ const Schedule = () => {
     );
     const [assignments, setAssignments] = useState<Assignment[]>([]);
     const [emails, setEmails] = useState([]);
-    const colors = {
+    const colors: Record<Assignment['subject'], Record<string, string>> = {
         Math: {
             easy: '#B6F09C',
             medium: '#9EF37A',
@@ -212,6 +212,7 @@ const Schedule = () => {
                                         id={String(rectId)}
                                         data-day={daysOfWeek[index]}
                                         data-hour={outer_index + rowAmount}
+                                        data-testid={`schedule-rect-${rectId}`}
                                         onClick={createAssignment}
                                         className="rect"
                                         style={{ backgroundColor: color }}
