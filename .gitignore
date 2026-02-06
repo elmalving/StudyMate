@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.venv
+flask_session
 *.local
 
 # Editor directories and files
