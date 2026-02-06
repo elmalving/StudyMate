@@ -3,218 +3,221 @@ from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from flask_session import Session
 from config import ApplicationConfig
-from documents import db, User, Assignment
-
-app = Flask(__name__)
-app.config.from_object(ApplicationConfig)
-
-bcrypt = Bcrypt(app)
-CORS(app, supports_credentials=True)
-server_session = Session(app)
-db.init_app(app)
+from documents import init_mongo, User, Assignment
 
 
-@app.route('/@me')
-def get_current_user():
-    user_id = session.get('user_id')
-    if user_id is None:
-        return jsonify({'error': 'Unauthorized'}), 401
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(ApplicationConfig)
 
-    user = User.objects(id=user_id).first()
-    return jsonify({
-        'id': user.id,
-        'email': user.email,
-        'name': user.name
-    })
+    bcrypt = Bcrypt(app)
+    CORS(app, supports_credentials=True)
+    Session(app)
+
+    init_mongo(app)
 
 
-@app.route('/@assignment')
-def get_assignment():
-    email = request.args.get('email')
+    @app.route('/@me')
+    def get_current_user():
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': 'Unauthorized'}), 401
 
-    user_id = session.get('user_id')
-    if user_id is None:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    user = User.objects(id=user_id).first()
-
-    if user.email == 'test@gmail.com' and email:
-        user = User.objects(email=email).first()
-
-    assignments = [
-        {
-            'id': assignment.id,
-            'subject': assignment.subject,
-            'difficulty': assignment.difficulty,
-            'text': assignment.text,
-            'url': assignment.url,
-            'assigned_date': assignment.assigned_date,
-            'rect': assignment.rect,
-            'answer': assignment.answer,
-            'comment': assignment.comment,
-            'grade': assignment.grade
-        }
-        for assignment in user.assignments
-    ]
-
-    return jsonify({
-        'assignments': assignments
-    })
+        user = User.objects(id=user_id).first()
+        return jsonify({
+            'id': user.id,
+            'email': user.email,
+            'name': user.name
+        })
 
 
-@app.route('/@all_email')
-def get_all_email():
-    user_id = session.get('user_id')
-    if user_id is None:
-        return jsonify({'error': 'Unauthorized'}), 401
+    @app.route('/@assignment')
+    def get_assignment():
+        email = request.args.get('email')
 
-    user = User.objects(id=user_id).first()
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': 'Unauthorized'}), 401
 
-    if user.email != 'test@gmail.com':
-        return jsonify({'error': 'Access denied!'}), 403
+        user = User.objects(id=user_id).first()
 
-    emails = User.objects.only('email').exclude('id')
+        if user.email == 'test@gmail.com' and email:
+            user = User.objects(email=email).first()
 
-    return jsonify(emails)
+        assignments = [
+            {
+                'id': assignment.id,
+                'subject': assignment.subject,
+                'difficulty': assignment.difficulty,
+                'text': assignment.text,
+                'url': assignment.url,
+                'assigned_date': assignment.assigned_date,
+                'rect': assignment.rect,
+                'answer': assignment.answer,
+                'comment': assignment.comment,
+                'grade': assignment.grade
+            }
+            for assignment in user.assignments
+        ]
 
-
-@app.route('/add_assignment', methods=['POST'])
-def add_assignment():
-    subject = request.json['subject']
-    difficulty = request.json['difficulty']
-    text = request.json['task']
-    url = request.json['url']
-    email = request.json['email']
-    rect = request.json['rectId']
-
-    user_id = session.get('user_id')
-    if user_id is None:
-        return jsonify({'error': "Account doesn't exist"}), 401
-
-    user = User.objects(email=email).first()
-
-    if any(assignment.rect == rect for assignment in user.assignments):
-        return jsonify({'error': 'Rect is already occupied'}), 409
-
-    new_assignment = Assignment(subject=subject, difficulty=difficulty, text=text, url=url, rect=rect)
-    new_assignment.save()
-
-    user.assignments.append(new_assignment)
-    user.save()
-
-    return jsonify({'success': 'Assignment added successfully'}), 200
+        return jsonify({
+            'assignments': assignments
+        })
 
 
-@app.route('/add_answer', methods=['POST'])
-def add_answer():
-    try:
-        answer = request.json['answer']
-        rect = request.json['rectId']
-    except KeyError:
-        return jsonify({'error': 'Invalid JSON data'}), 400
+    @app.route('/@all_email')
+    def get_all_email():
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': 'Unauthorized'}), 401
 
-    user_id = session.get('user_id')
-    if user_id is None:
-        return jsonify({'error': "User not logged in"}), 401
+        user = User.objects(id=user_id).first()
 
-    user = User.objects(id=user_id).first()
-    if not user:
-        return jsonify({'error': "User not found"}), 404
+        if user.email != 'test@gmail.com':
+            return jsonify({'error': 'Access denied!'}), 403
 
-    for assignment in user.assignments:
-        if assignment.rect == rect:
-            assignment.answer = answer
-            assignment.save()
+        emails = User.objects.only('email').exclude('id')
 
-            return jsonify({'success': 'Answer added successfully'}), 200
+        return jsonify(emails)
 
 
-@app.route('/add_grade', methods=['POST'])
-def add_grade():
-    try:
-        comment = request.json['comment']
-        grade = request.json['grade']
+    @app.route('/add_assignment', methods=['POST'])
+    def add_assignment():
+        subject = request.json['subject']
+        difficulty = request.json['difficulty']
+        text = request.json['task']
+        url = request.json['url']
         email = request.json['email']
         rect = request.json['rectId']
-    except KeyError:
-        return jsonify({'error': 'Invalid JSON data'}), 400
 
-    user_id = session.get('user_id')
-    if user_id is None:
-        return jsonify({'error': "User not logged in"}), 401
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': "Account doesn't exist"}), 401
 
-    user = User.objects(email=email).first()
-    if not user:
-        return jsonify({'error': "User not found"}), 404
+        user = User.objects(email=email).first()
 
-    for assignment in user.assignments:
-        if assignment.rect == rect:
-            assignment.comment = comment
-            assignment.grade = grade
-            assignment.rect = None
-            assignment.save()
+        if any(assignment.rect == rect for assignment in user.assignments):
+            return jsonify({'error': 'Rect is already occupied'}), 409
 
-            return jsonify({'success': 'Answer added successfully'}), 200
+        new_assignment = Assignment(subject=subject, difficulty=difficulty, text=text, url=url, rect=rect)
+        new_assignment.save()
+
+        user.assignments.append(new_assignment)
+        user.save()
+
+        return jsonify({'success': 'Assignment added successfully'}), 200
 
 
-@app.route('/register', methods=['POST'])
-def register_user():
-    email = request.json['email']
-    password = request.json['password']
-    name = request.json['firstName']
-    surname = request.json['lastName']
-    degree = request.json['degree']
+    @app.route('/add_answer', methods=['POST'])
+    def add_answer():
+        try:
+            answer = request.json['answer']
+            rect = request.json['rectId']
+        except KeyError:
+            return jsonify({'error': 'Invalid JSON data'}), 400
 
-    user_exists = User.objects(email=email).first() is not None
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': "User not logged in"}), 401
 
-    if user_exists:
-        return jsonify({'error': 'Email is already used'}), 409
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': "User not found"}), 404
 
-    hashed_password = bcrypt.generate_password_hash(password)
-    new_user = User(email=email, password=hashed_password, name=name, surname=surname, degree=degree)
-    new_user.save()
+        for assignment in user.assignments:
+            if assignment.rect == rect:
+                assignment.answer = answer
+                assignment.save()
 
-    session['user_id'] = new_user.id
-
-    return jsonify({
-        'id': new_user.id,
-        'email': new_user.email
-    })
-
-
-@app.route('/login', methods=['POST'])
-def login_user():
-    email = request.json['email']
-    password = request.json['password']
-
-    user = User.objects(email=email).first()
-
-    if user is None or not bcrypt.check_password_hash(user.password, password):
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    session['user_id'] = user.id
-
-    return jsonify({
-        'id': user.id,
-        'email': user.email
-    })
+                return jsonify({'success': 'Answer added successfully'}), 200
 
 
-@app.route('/analyze_input', methods=['POST'])
-def analyze_input():
-    message = request.json['message']
+    @app.route('/add_grade', methods=['POST'])
+    def add_grade():
+        try:
+            comment = request.json['comment']
+            grade = request.json['grade']
+            email = request.json['email']
+            rect = request.json['rectId']
+        except KeyError:
+            return jsonify({'error': 'Invalid JSON data'}), 400
 
-    return jsonify({
-        'answer': "Don't try to test what is not done yet",
-        'material': ['url1', 'url2']
-    })
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': "User not logged in"}), 401
+
+        user = User.objects(email=email).first()
+        if not user:
+            return jsonify({'error': "User not found"}), 404
+
+        for assignment in user.assignments:
+            if assignment.rect == rect:
+                assignment.comment = comment
+                assignment.grade = grade
+                assignment.rect = None
+                assignment.save()
+
+                return jsonify({'success': 'Answer added successfully'}), 200
 
 
-@app.route('/logout', methods=['POST'])
-def logout_user():
-    session.pop('user_id')
-    return '200'
+    @app.route('/register', methods=['POST'])
+    def register_user():
+        email = request.json['email']
+        password = request.json['password']
+        name = request.json['firstName']
+        surname = request.json['lastName']
+        degree = request.json['degree']
+
+        user_exists = User.objects(email=email).first() is not None
+
+        if user_exists:
+            return jsonify({'error': 'Email is already used'}), 409
+
+        hashed_password = bcrypt.generate_password_hash(password)
+        new_user = User(email=email, password=hashed_password, name=name, surname=surname, degree=degree)
+        new_user.save()
+
+        session['user_id'] = new_user.id
+
+        return jsonify({
+            'id': new_user.id,
+            'email': new_user.email
+        })
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    @app.route('/login', methods=['POST'])
+    def login_user():
+        email = request.json['email']
+        password = request.json['password']
+
+        user = User.objects(email=email).first()
+
+        if user is None or not bcrypt.check_password_hash(user.password, password):
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        session['user_id'] = user.id
+
+        return jsonify({
+            'id': user.id,
+            'email': user.email
+        })
+
+
+    @app.route('/analyze_input', methods=['POST'])
+    def analyze_input():
+        message = request.json['message']
+
+        return jsonify({
+            'answer': "Don't try to test what is not done yet",
+            'material': ['url1', 'url2']
+        })
+
+
+    @app.route('/logout', methods=['POST'])
+    def logout_user():
+        session.pop('user_id')
+        return '200'
+
+    return app
+
+app = create_app()

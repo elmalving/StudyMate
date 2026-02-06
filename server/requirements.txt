@@ -4,7 +4,7 @@ flask
 flask-bcrypt
 flask-session
 flask-cors
-git+https://github.com/idoshr/flask-mongoengine.git@1.0.1
 redis
 requests
 openai
+pytest

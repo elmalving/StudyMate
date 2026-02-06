@@ -1,14 +1,17 @@
 from datetime import datetime
 
-from flask_mongoengine import MongoEngine
-from mongoengine import ListField, ReferenceField
+import mongoengine as db
+from mongoengine import connect, disconnect, ListField, ReferenceField
 from uuid import uuid4
-
-db = MongoEngine()
-
 
 def get_uuid():
     return uuid4().hex
+
+def init_mongo(app):
+    connect(**app.config["MONGODB_SETTINGS"])
+
+def close_mongo(app):
+    disconnect(app.config["MONGODB_SETTINGS"]['db'])
 
 
 class Assignment(db.Document):
