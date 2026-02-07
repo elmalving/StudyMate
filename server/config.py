@@ -2,17 +2,10 @@ import os
 
 from dotenv import load_dotenv
 from cachelib.redis import RedisCache
-import pymongo
-import mongomock
 from cachelib.simple import SimpleCache
 
 load_dotenv()
 
-
-CLIENT_CLASS_MAP = {
-    'mongomock': mongomock.MongoClient,
-    'pymongo': pymongo.MongoClient,
-}
 
 SESSION_CAHCE_MAP = {
     'redis': RedisCache(
@@ -23,7 +16,6 @@ SESSION_CAHCE_MAP = {
     'simple': SimpleCache()
 }
 
-client_class_key = os.environ.get('MONGODB_CLIENT_CLASS', 'pymongo')
 session_cache_key = os.environ.get('SESSION_CACHE', 'redis')
 
 class ApplicationConfig:
@@ -31,9 +23,12 @@ class ApplicationConfig:
         'db': os.environ.get('MONGODB_NAME', 'db'),
         'host': os.environ.get('MONGODB_HOST', 'localhost'),
         'port': 27017,
-        'mongo_client_class': CLIENT_CLASS_MAP[client_class_key],
         'uuidRepresentation': 'standard',
     }
+
+    if (os.environ.get('MONGODB_CLIENT_CLASS') == 'mongomock'):
+        import mongomock
+        MONGODB_SETTINGS['mongo_client_class'] = mongomock.MongoClient
 
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
 

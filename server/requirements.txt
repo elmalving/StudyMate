@@ -4,6 +4,7 @@ flask
 flask-bcrypt
 flask-session
 flask-cors
+mongoengine
 redis
 requests
 openai

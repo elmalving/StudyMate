@@ -1,4 +1,4 @@
-FROM node:hydrogen-slim as BUILD_IMAGE
+FROM node:hydrogen-slim AS build_image
 WORKDIR /app/react-app
 
 COPY package.json .
@@ -9,10 +9,10 @@ COPY . .
 
 RUN npm run build
 
-FROM node:hydrogen-slim as PRODUCTION_IMAGE
+FROM node:hydrogen-slim AS production_image
 WORKDIR /app/react-app
 
-COPY --from=BUILD_IMAGE /app/react-app/dist/ /app/react-app/dist/
+COPY --from=build_image /app/react-app/dist/ /app/react-app/dist/
 
 COPY package.json .
 COPY vite.config.js .

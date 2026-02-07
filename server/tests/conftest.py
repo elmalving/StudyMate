@@ -11,8 +11,10 @@ def app(monkeypatch):
     monkeypatch.setenv("MONGODB_CLIENT_CLASS", 'mongomock')
     monkeypatch.setenv("SESSION_CACHE", "simple")
 
-    from app import app
+    from app import create_app
 
+    app = create_app()
+    
     return app
 
 
