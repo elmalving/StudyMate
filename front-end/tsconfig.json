@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
         "jsx": "react-jsx",
-        "types": ["jest", "node"]
+        "types": ["jest", "node"],
+        "skipLibCheck": true
     },
-    "include": ["setupTests.js"]
+    "include": ["src", "setupTests.js"]
 }
