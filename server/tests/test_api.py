@@ -52,7 +52,7 @@ def test_aiassistant_create_test_json(monkeypatch):
     fake = {"choices": [{"text": " {\"questions\": [] } "}]}
 
     def fake_create(**kwargs):
-        # your code uses engine="text-davinci-003" here
+        assert kwargs["model"] == "gpt-4o-mini"
         assert kwargs["max_tokens"] == 1024
         return fake
 

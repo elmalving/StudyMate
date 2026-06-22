@@ -40,29 +40,33 @@ class AIAssistant:
         self.current_answer = None
 
     def create_test_json(self, topic):
-        prompt = (f"Create a theory test of 5 questions on a {topic} topic. The questions should not be repeated. "
-                  f"Some questions should have several answers. Write in the following format:\n\n")
-        prompt += '''
-        {
-          "questions": [
-            {
-              "question": "1. question?",
-              "options": [
-                "a) answer1",
-                "b) answer2",
-                "c) answer3",
-                "d) answer4"
-              ],
-              "correct_answers": ["correct answer"]
-            }, ...
-          ]
-        }
-        '''
+        system_instruction = (
+            "You are a helpful study assistant. Create a theory test of 5 questions on the requested topic. "
+            "The questions should not be repeated. Some questions should have several answers. "
+            "You must respond ONLY with a valid JSON object matching this exact format:\n\n"
+            "{\n"
+            '  "questions": [\n'
+            "    {\n"
+            '      "question": "1. question?",\n'
+            '      "options": [\n'
+            '        "a) answer1",\n'
+            '        "b) answer2",\n'
+            '        "c) answer3",\n'
+            '        "d) answer4"\n'
+            "      ],\n"
+            '      "correct_answers": ["correct answer"]\n'
+            "    }, ...\n"
+            "  ]\n"
+            "}"
+        )
 
         openai.api_key = self.openai_api_key
         response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": f"Create a test about {topic}."}
+            ],
             max_tokens=1024,
             n=1,
             stop=None,
@@ -77,7 +81,7 @@ class AIAssistant:
 
         openai.api_key = self.openai_api_key
         response = openai.Completion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": prompt}
             ],
@@ -89,15 +93,30 @@ class AIAssistant:
         answer = response["choices"][0]["text"].strip()
         return answer
 
-    def answer_question(self, question):
-        assistant_prompt = ("Switch to study assistant mode and don't participate in non-study related conversations. "
-                            "Set the temperature to 0, answer as accurately as possible. If you can't answer, "
-                            "type I dont know answer on this question, I'm sorry.")
+    def answer_question(self, question, schedule_and_progress_context=None):
+        assistant_prompt = (
+            "You are StudyMate AI, an expert, encouraging, and highly professional study assistant and tutor. "
+            "Your goal is to help students learn conveniently and efficiently.\n\n"
+            "Strict Guidelines:\n"
+            "1. Switch to study assistant mode and don't participate in non-study related conversations. "
+            "If the question is not related to studies, politely redirect the student to focus on their course material.\n"
+            "2. Answer as accurately, clearly, and helpful as possible. Use simple, structured explanations suitable for a student.\n"
+            "3. If you can't answer, type I dont know answer on this question, I'm sorry."
+        )
+
+        if schedule_and_progress_context:
+            assistant_prompt += (
+                f"\n\nStudent's Schedule and Progress Context:\n{schedule_and_progress_context}\n"
+                "4. Personalize your assistance and responses based on the student's schedule and progress context above. "
+                "Acknowledge their active subjects, difficulty levels, and current progress (such as completed assignments or grades) "
+                "where relevant, offering targeted study tips or positive reinforcement."
+            )
+
         prompt = f"{assistant_prompt}\n\n{question}?"
 
         openai.api_key = self.openai_api_key
         response = openai.Completion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": prompt}
             ],

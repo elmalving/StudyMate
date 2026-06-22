@@ -96,3 +96,53 @@ def test_logout_clears_session(client):
 
     with client.session_transaction() as sess:
         assert sess.get('user_id') is None
+
+
+def test_analyze_input_with_assignments(client, monkeypatch):
+    import api
+    from factories import UserFactory, AssignmentFactory
+
+    assignment = AssignmentFactory(
+        subject='Math',
+        difficulty='hard',
+        answer='done',
+        grade=5,
+        comment='Nice job'
+    ).create()
+    UserFactory(id='u1', email='a@b.com', assignments=[assignment]).create()
+    set_session(client, 'u1')
+
+    fake_completion_calls = []
+    def fake_create(**kwargs):
+        fake_completion_calls.append(kwargs)
+        if "Extract the main topic" in kwargs.get("messages", [{}])[0].get("content", ""):
+            return {"choices": [{"text": "Math topic"}]}
+        else:
+            return {"choices": [{"text": "This is a great study answer."}]}
+    monkeypatch.setattr(api.openai.Completion, "create", fake_create)
+
+    def fake_get(url, headers=None, params=None):
+        mock_resp = api.requests.Response()
+        mock_resp.status_code = 200
+        mock_resp._content = b'{"webPages": {"value": [{"url": "http://mock-url.com"}]}}'
+        return mock_resp
+    monkeypatch.setattr(api.requests, "get", fake_get)
+
+    resp = client.post(
+        '/analyze_input',
+        json={
+            'message': 'Hello, help me with Math please!'
+        }
+    )
+
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data['answer'] == "This is a great study answer."
+    assert data['material'] == ["http://mock-url.com"]
+
+    assert len(fake_completion_calls) > 0
+    chat_prompt = fake_completion_calls[0]["messages"][0]["content"]
+    assert "Student's Schedule and Progress Context:" in chat_prompt
+    assert "Subject: Math" in chat_prompt
+    assert "Grade: 5/5" in chat_prompt
+

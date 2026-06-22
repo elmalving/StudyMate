@@ -205,11 +205,67 @@ def create_app():
 
     @app.route('/analyze_input', methods=['POST'])
     def analyze_input():
-        message = request.json['message']
+        message = request.json.get('message')
+
+        # Fetch assignments from database for the logged-in user
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': "User not logged in"}), 401
+
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': "User not found"}), 404
+
+        assignments = user.assignments
+
+        # Format assignments into a concise summary representing schedule and progress
+        schedule_progress_list = []
+        for a in assignments:
+            status = "Not completed"
+            if a.answer:
+                status = "Completed (Answer submitted)"
+            if a.grade:
+                status += f" - Grade: {a.grade}/5"
+            if a.comment:
+                status += f" (Teacher comment: {a.comment})"
+            
+            schedule_progress_list.append(
+                f"- Subject: {a.subject}, Difficulty: {a.difficulty}, Status: {status}"
+            )
+        
+        schedule_and_progress_context = "\n".join(schedule_progress_list) if schedule_progress_list else None
+
+        import os
+        from api import AIAssistant, SearchAssistant
+        
+        openai_key = os.environ.get("OPENAI_API_KEY", "mock-key")
+        bing_key = os.environ.get("BING_API_KEY", "mock-key")
+        
+        ai = AIAssistant(openai_api_key=openai_key)
+        sa = SearchAssistant(bing_api_key=bing_key)
+        
+        # 1. Answer the question using AI assistant
+        try:
+            ai.answer_question(message, schedule_and_progress_context=schedule_and_progress_context)
+            answer = ai.current_answer
+        except Exception as e:
+            # Fallback in case of API issues
+            answer = f"Error processing request: {str(e)}"
+
+        # 2. Extract the topic and search the web for resources
+        try:
+            topic = ai.extract_topic(message)
+            urls_json_str = sa.search(topic)
+            import json as py_json
+            urls_data = py_json.loads(urls_json_str)
+            material = urls_data.get('urls', [])
+        except Exception:
+            # Fallback if search or topic extraction fails
+            material = []
 
         return jsonify({
-            'answer': "Don't try to test what is not done yet",
-            'material': ['url1', 'url2']
+            'answer': answer,
+            'material': material
         })
 
 
