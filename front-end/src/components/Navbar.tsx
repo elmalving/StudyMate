@@ -215,43 +215,6 @@ const Navbar = () => {
                             </div>
                         </Link>
                     </div>
-                    <div className={`link-container`}>
-                        <Link to={'/charts'}>
-                            <div
-                                className={`link-box${currentPage === '/charts' ? ' current-page' : ''}`}
-                            >
-                                <div className="link-icon">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 20 20"
-                                        fill="none"
-                                    >
-                                        <g clipPath="url(#clip0_charts)">
-                                            <path
-                                                d="M1 18H19V2M4 14V6M8 14V4M12 14V8M16 14V5"
-                                                stroke="#686B6E"
-                                                strokeWidth="1.5"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </g>
-                                        <defs>
-                                            <clipPath id="clip0_charts">
-                                                <rect
-                                                    width="20"
-                                                    height="20"
-                                                    fill="white"
-                                                />
-                                            </clipPath>
-                                        </defs>
-                                    </svg>
-                                </div>
-                                <div className="navbar-link">Charts</div>
-                            </div>
-                        </Link>
-                    </div>
                 </div>
             </div>
             <div className="topic">

@@ -4,9 +4,9 @@ import GradeBySubjectChart from '../components/GradeBySubjectChart';
 import PerformanceTrendChart from '../components/PerformanceTrendChart';
 import DifficultyChart from '../components/DifficultyChart';
 import CompletionRateChart from '../components/CompletionRateChart';
-import '../css/charts.css';
+import '../css/progress.css';
 
-const Charts = () => {
+const ProgressPage = () => {
     const [gradeBySubject, setGradeBySubject] = useState([]);
     const [performanceTrend, setPerformanceTrend] = useState([]);
     const [difficultyBreakdown, setDifficultyBreakdown] = useState({});
@@ -29,8 +29,8 @@ const Charts = () => {
                 setDifficultyBreakdown(diffRes.data.data || {});
                 setCompletionRate(completionRes.data.data || []);
             } catch (err) {
-                console.error('Error fetching chart data:', err);
-                setError('Failed to load chart data');
+                console.error('Error fetching progress data:', err);
+                setError('Failed to load progress data');
             } finally {
                 setLoading(false);
             }
@@ -38,7 +38,7 @@ const Charts = () => {
     }, []);
 
     if (loading) {
-        return <div className="content"><p>Loading charts...</p></div>;
+        return <div className="content"><p>Loading progress...</p></div>;
     }
 
     if (error) {
@@ -47,10 +47,10 @@ const Charts = () => {
 
     return (
         <div className="content">
-            <div className="charts-container">
-                <h1 className="charts-title">Performance Dashboard</h1>
+            <div className="progress-container">
+                <h1 className="progress-title">Performance Dashboard</h1>
                 
-                <div className="charts-grid">
+                <div className="progress-grid">
                     <div className="chart-box">
                         <h2>Grade Distribution by Subject</h2>
                         <GradeBySubjectChart data={gradeBySubject} />
@@ -76,4 +76,4 @@ const Charts = () => {
     );
 };
 
-export default Charts;
+export default ProgressPage;

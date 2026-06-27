@@ -31,7 +31,7 @@ beforeEach(() => {
     jest.clearAllMocks();
 });
 
-test('fetches chart data and renders dashboard headings', async () => {
+test('fetches progress data and renders dashboard headings', async () => {
     const mockedGet = httpClient.get;
 
     mockedGet
@@ -48,7 +48,7 @@ test('fetches chart data and renders dashboard headings', async () => {
 
     render(<Progress />);
 
-    expect(screen.getByText(/Loading charts/i)).toBeInTheDocument();
+    expect(screen.getByText(/Loading progress/i)).toBeInTheDocument();
 
     await waitFor(() => {
         expect(mockedGet).toHaveBeenCalledTimes(4);
@@ -75,7 +75,7 @@ test('shows error message when fetch fails', async () => {
 
     await waitFor(() => {
         expect(
-            screen.getByText(/Failed to load chart data/i)
+            screen.getByText(/Failed to load progress data/i)
         ).toBeInTheDocument();
     });
 });

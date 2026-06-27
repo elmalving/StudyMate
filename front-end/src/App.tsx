@@ -12,7 +12,6 @@ import Navbar from './components/Navbar';
 import Chat from './pages/Chat';
 import Schedule from './pages/Schedule';
 import Progress from './pages/Progress';
-import Charts from './pages/Progress';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
@@ -28,7 +27,6 @@ function App() {
                 <Route index element={<Chat />} />
                 <Route path="/schedule" element={<Schedule />} />
                 <Route path="/progress" element={<Progress />} />
-                <Route path="/charts" element={<Charts />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/subject" element={<Subject />} />
