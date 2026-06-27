@@ -12,7 +12,7 @@ import Navbar from './components/Navbar';
 import Chat from './pages/Chat';
 import Schedule from './pages/Schedule';
 import Progress from './pages/Progress';
-import Charts from './pages/Charts';
+import Charts from './pages/Progress';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
