@@ -269,6 +269,113 @@ def create_app():
         })
 
 
+    @app.route('/stats/grades-by-subject', methods=['GET'])
+    def get_grades_by_subject():
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        subject_grades = {}
+        subject_counts = {}
+
+        for assignment in user.assignments:
+            if assignment.grade:
+                subject = assignment.subject
+                if subject not in subject_grades:
+                    subject_grades[subject] = 0
+                    subject_counts[subject] = 0
+                subject_grades[subject] += assignment.grade
+                subject_counts[subject] += 1
+
+        data = [
+            {'subject': subject, 'average_grade': subject_grades[subject] / subject_counts[subject]}
+            for subject in subject_grades
+        ]
+
+        return jsonify({'data': data})
+
+
+    @app.route('/stats/performance-timeline', methods=['GET'])
+    def get_performance_timeline():
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        timeline_data = []
+        for assignment in user.assignments:
+            if assignment.grade and assignment.assigned_date:
+                timeline_data.append({
+                    'date': assignment.assigned_date,
+                    'grade': assignment.grade,
+                    'subject': assignment.subject
+                })
+
+        # Sort by date
+        timeline_data.sort(key=lambda x: x['date'])
+
+        return jsonify({'data': timeline_data})
+
+
+    @app.route('/stats/difficulty-breakdown', methods=['GET'])
+    def get_difficulty_breakdown():
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        difficulty_count = {'easy': 0, 'medium': 0, 'hard': 0}
+
+        for assignment in user.assignments:
+            difficulty = assignment.difficulty.lower()
+            if difficulty in difficulty_count:
+                difficulty_count[difficulty] += 1
+
+        return jsonify({'data': difficulty_count})
+
+
+    @app.route('/stats/completion-rate', methods=['GET'])
+    def get_completion_rate():
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        subject_stats = {}
+
+        for assignment in user.assignments:
+            subject = assignment.subject
+            if subject not in subject_stats:
+                subject_stats[subject] = {'total': 0, 'graded': 0}
+            subject_stats[subject]['total'] += 1
+            if assignment.grade:
+                subject_stats[subject]['graded'] += 1
+
+        data = [
+            {
+                'subject': subject,
+                'completion_rate': (subject_stats[subject]['graded'] / subject_stats[subject]['total'] * 100)
+                    if subject_stats[subject]['total'] > 0 else 0
+            }
+            for subject in subject_stats
+        ]
+
+        return jsonify({'data': data})
+
+
     @app.route('/logout', methods=['POST'])
     def logout_user():
         session.pop('user_id')
