@@ -1,3 +1,4 @@
+import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Chat from './Chat';
@@ -6,6 +7,24 @@ import httpClient from '../httpClient';
 jest.mock('../httpClient', () => ({
     post: jest.fn(),
 }));
+
+jest.mock('react-router-dom', () => {
+    const actual = jest.requireActual('react-router-dom');
+    const mockReact = require('react');
+    return {
+        ...actual,
+        useOutletContext: () => {
+            const [messages, setMessages] = mockReact.useState([]);
+            const [isVisible, setIsVisible] = mockReact.useState(true);
+            return {
+                chatMessages: messages,
+                setChatMessages: setMessages,
+                chatVisible: isVisible,
+                setChatVisible: setIsVisible,
+            };
+        }
+    };
+});
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -68,7 +87,7 @@ describe('Chat', () => {
         expect(httpClient.post).toHaveBeenCalledTimes(1);
         expect(httpClient.post).toHaveBeenCalledWith(
             '//localhost:5000/analyze_input',
-            { message: 'My question' }
+            { message: 'My question', history: [] }
         );
 
         expect(await screen.findByText('My question')).toBeInTheDocument();

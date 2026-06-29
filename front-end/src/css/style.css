@@ -314,6 +314,55 @@
     letter-spacing: 0.15px;
 }
 
+.text a {
+    color: #54b3d6;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.text a:hover {
+    color: #7ecef0;
+}
+
+.message-bubble {
+    display: block;
+    width: fit-content;
+    max-width: 70%;
+    flex-shrink: 0;
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    font-family: Plus Jakarta Sans;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 28px;
+    overflow-wrap: break-word;
+}
+
+.message-bubble.user {
+    align-self: flex-end;
+    background-color: #2a3136;
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.message-bubble.assistant {
+    align-self: flex-start;
+    background-color: #1a1f23;
+    color: #e8e9e9;
+    border-bottom-left-radius: 4px;
+}
+
+.message-bubble a {
+    color: #54b3d6;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.message-bubble a:hover {
+    color: #7ecef0;
+}
+
 .form-container {
     padding: 12px;
     display: flex;

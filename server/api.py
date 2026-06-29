@@ -1,25 +1,18 @@
 import requests
 import json
 import openai
+from ddgs import DDGS
 
 
 class SearchAssistant:
-    bing_endpoint = "https://api.bing.microsoft.com/v7.0/search"
-
-    def __init__(self, bing_api_key):
-        self.bing_api_key = bing_api_key
+    def __init__(self):
         self.urls_json = None
 
     def search(self, query):
-        mkt = 'en-US'
-        params = {'q': query, 'mkt': mkt}
-        headers = {'Ocp-Apim-Subscription-Key': self.bing_api_key}
-
         try:
-            response = requests.get(self.bing_endpoint, headers=headers, params=params)
-            response.raise_for_status()
-            json_data = response.json()
-            results_prompts = [f"{result['url']}" for result in json_data["webPages"]["value"]]
+            with DDGS() as ddgs:
+                results = list(ddgs.text(query, max_results=5))
+            results_prompts = [result['href'] for result in results if 'href' in result]
 
             self.urls_to_json(results_prompts)
 
@@ -36,78 +29,100 @@ class SearchAssistant:
 
 class AIAssistant:
     def __init__(self, openai_api_key):
-        self.openai_api_key = openai_api_key
+        self.client = openai.OpenAI(api_key=openai_api_key)
         self.current_answer = None
 
     def create_test_json(self, topic):
-        prompt = (f"Create a theory test of 5 questions on a {topic} topic. The questions should not be repeated. "
-                  f"Some questions should have several answers. Write in the following format:\n\n")
-        prompt += '''
-        {
-          "questions": [
-            {
-              "question": "1. question?",
-              "options": [
-                "a) answer1",
-                "b) answer2",
-                "c) answer3",
-                "d) answer4"
-              ],
-              "correct_answers": ["correct answer"]
-            }, ...
-          ]
-        }
-        '''
+        system_instruction = (
+            "You are a helpful study assistant. Create a theory test of 5 questions on the requested topic. "
+            "The questions should not be repeated. Some questions should have several answers. "
+            "You must respond ONLY with a valid JSON object matching this exact format:\n\n"
+            "{\n"
+            '  "questions": [\n'
+            "    {\n"
+            '      "question": "1. question?",\n'
+            '      "options": [\n'
+            '        "a) answer1",\n'
+            '        "b) answer2",\n'
+            '        "c) answer3",\n'
+            '        "d) answer4"\n'
+            "      ],\n"
+            '      "correct_answers": ["correct answer"]\n'
+            "    }, ...\n"
+            "  ]\n"
+            "}"
+        )
 
-        openai.api_key = self.openai_api_key
-        response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=prompt,
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": f"Create a test about {topic}."}
+            ],
             max_tokens=1024,
-            n=1,
-            stop=None,
             temperature=0.7,
         )
-        answer = response["choices"][0]["text"].strip()
+        answer = response.choices[0].message.content.strip()
         return answer
 
     def extract_topic(self, question):
-        extract_prompt = "Extract the main topic of the question, to find the answer by myself.\n"
-        prompt = f"{extract_prompt}\n\n{question}?"
-
-        openai.api_key = self.openai_api_key
-        response = openai.Completion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1024,
-            n=1,
-            stop=None,
-            temperature=0.7,
+        system_instruction = (
+            "You are a search query extractor. Analyze the user's input. "
+            "If the input is a specific question or study topic that would benefit from a web search for educational resources (e.g., 'Newton's laws', 'how does photosynthesis work', 'calculus derivatives'), extract and return ONLY a concise search query (1-4 keywords) optimized for DuckDuckGo. "
+            "If the input is too general, a greeting, casual conversation, off-topic, or doesn't make sense to search on the web (e.g., 'hi', 'thank you', 'ok', 'can you help me', 'what is my schedule'), respond with exactly 'NONE'."
         )
-        answer = response["choices"][0]["text"].strip()
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": question}
+            ],
+            max_tokens=50,
+            temperature=0.3,
+        )
+        answer = response.choices[0].message.content.strip()
+        answer = answer.strip('\'"` ')
         return answer
 
-    def answer_question(self, question):
-        assistant_prompt = ("Switch to study assistant mode and don't participate in non-study related conversations. "
-                            "Set the temperature to 0, answer as accurately as possible. If you can't answer, "
-                            "type I dont know answer on this question, I'm sorry.")
-        prompt = f"{assistant_prompt}\n\n{question}?"
+    def answer_question(self, question, history=None, schedule_and_progress_context=None):
+        assistant_prompt = (
+            "You are StudyMate AI, an expert, encouraging, and highly professional study assistant and tutor. "
+            "Your goal is to help students learn conveniently and efficiently.\n\n"
+            "Strict Guidelines:\n"
+            "1. Switch to study assistant mode and don't participate in non-study related conversations. "
+            "If the question is not related to studies, politely redirect the student to focus on their course material.\n"
+            "2. Answer as accurately, clearly, and helpful as possible. Use simple, structured explanations suitable for a student.\n"
+            "3. If you can't answer, type I dont know answer on this question, I'm sorry."
+        )
 
-        openai.api_key = self.openai_api_key
-        response = openai.Completion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+        if schedule_and_progress_context:
+            assistant_prompt += (
+                f"\n\nStudent's Schedule and Progress Context:\n{schedule_and_progress_context}\n"
+                "4. Personalize your assistance and responses based on the student's schedule and progress context above. "
+                "Acknowledge their active subjects, difficulty levels, and current progress (such as completed assignments or grades) "
+                "where relevant, offering targeted study tips or positive reinforcement."
+            )
+
+        messages = [
+            {"role": "system", "content": assistant_prompt}
+        ]
+
+        if history:
+            for msg in history:
+                role = "user" if msg.get("sender") == "user" else "assistant"
+                messages.append({"role": role, "content": msg.get("text", "")})
+
+        messages.append({"role": "user", "content": question})
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
             max_tokens=1024,
-            n=1,
-            stop=None,
             temperature=0.7,
         )
 
-        answer = response["choices"][0]["text"].strip()
+        answer = response.choices[0].message.content.strip()
 
         if "I'm sorry" in answer:
             self.current_answer = "Bot was unable to provide a satisfactory answer."

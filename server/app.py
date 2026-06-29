@@ -76,7 +76,7 @@ def create_app():
         if user.email != 'test@gmail.com':
             return jsonify({'error': 'Access denied!'}), 403
 
-        emails = User.objects.only('email').exclude('id')
+        emails = [{'email': u.email} for u in User.objects.only('email')]
 
         return jsonify(emails)
 
@@ -205,11 +205,72 @@ def create_app():
 
     @app.route('/analyze_input', methods=['POST'])
     def analyze_input():
-        message = request.json['message']
+        message = request.json.get('message')
+        history = request.json.get('history', [])
+
+        # Fetch assignments from database for the logged-in user
+        user_id = session.get('user_id')
+        if user_id is None:
+            return jsonify({'error': "User not logged in"}), 401
+
+        user = User.objects(id=user_id).first()
+        if not user:
+            return jsonify({'error': "User not found"}), 404
+
+        assignments = user.assignments
+
+        # Format assignments into a concise summary representing schedule and progress
+        schedule_progress_list = []
+        for a in assignments:
+            parts = [
+                f"Subject: {a.subject}",
+                f"Difficulty: {a.difficulty}",
+                f"Text: {a.text}",
+                f"Assigned Date: {a.assigned_date}",
+                f"URL: {a.url if a.url else 'None'}",
+                f"Student Answer: {a.answer if a.answer else 'None'}",
+                f"Grade: {f'{a.grade}/5' if a.grade else 'None'}",
+                f"Teacher Comment: {a.comment if a.comment else 'None'}"
+            ]
+            
+            details = ", ".join(parts)
+            schedule_progress_list.append(f"- {details}")
+        
+        schedule_and_progress_context = "\n".join(schedule_progress_list) if schedule_progress_list else None
+
+        import os
+        from api import AIAssistant, SearchAssistant
+        
+        openai_key = os.environ.get("OPENAI_API_KEY", "mock-key")
+        
+        ai = AIAssistant(openai_api_key=openai_key)
+        sa = SearchAssistant()
+        
+        # 1. Answer the question using AI assistant
+        try:
+            ai.answer_question(message, history=history, schedule_and_progress_context=schedule_and_progress_context)
+            answer = ai.current_answer
+        except Exception as e:
+            # Fallback in case of API issues
+            answer = f"Error processing request: {str(e)}"
+
+        # 2. Extract the topic and search the web for resources
+        try:
+            topic = ai.extract_topic(message)
+            if topic and topic.upper() != "NONE":
+                urls_json_str = sa.search(topic)
+                import json as py_json
+                urls_data = py_json.loads(urls_json_str)
+                material = urls_data.get('urls', [])
+            else:
+                material = []
+        except Exception:
+            # Fallback if search or topic extraction fails
+            material = []
 
         return jsonify({
-            'answer': "Don't try to test what is not done yet",
-            'material': ['url1', 'url2']
+            'answer': answer,
+            'material': material
         })
 
 

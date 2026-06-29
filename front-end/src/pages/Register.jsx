@@ -10,18 +10,22 @@ const Register = () => {
     const [password, setPassword] = useState('');
     const [degree, setDegree] = useState('');
     const [termsChecked, setTerms] = useState(false);
+    const [errors, setErrors] = useState({});
 
     const signUpUser = async () => {
-        if (
-            !termsChecked ||
-            email == '' ||
-            password == '' ||
-            firstName == '' ||
-            lastName == '' ||
-            degree == ''
-        ) {
+        const newErrors = {};
+        if (!firstName) newErrors.firstName = 'First Name is required';
+        if (!lastName) newErrors.lastName = 'Last Name is required';
+        if (!email) newErrors.email = 'Email is required';
+        if (!password) newErrors.password = 'Password is required';
+        if (!degree) newErrors.degree = 'Current Degree is required';
+        if (!termsChecked) newErrors.termsChecked = 'You must agree to the Terms and conditions';
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
+
         try {
             await httpClient.post('//localhost:5000/register', {
                 email,
@@ -56,7 +60,7 @@ const Register = () => {
                     <div className="login-content align-center">
                         <div className="row-gap">
                             <div className="login-welcome">
-                                Welcome aboard! Let's start your educational
+                                Welcome aboard! Let&apos;s start your educational
                                 journey together.
                             </div>
                         </div>
@@ -76,13 +80,19 @@ const Register = () => {
                                                 placeholder="First Name"
                                                 type="text"
                                                 value={firstName}
-                                                onChange={(e) =>
-                                                    setfirstName(e.target.value)
-                                                }
+                                                onChange={(e) => {
+                                                    setfirstName(e.target.value);
+                                                    if (errors.firstName) {
+                                                        setErrors((prev) => ({ ...prev, firstName: '' }));
+                                                    }
+                                                }}
                                                 className="input input-placeholder"
                                                 required
                                             />
                                         </div>
+                                        {errors.firstName && (
+                                            <span className="error-message">{errors.firstName}</span>
+                                        )}
                                     </div>
                                     <div className="column-container">
                                         <label
@@ -97,13 +107,19 @@ const Register = () => {
                                                 placeholder="Last Name"
                                                 type="text"
                                                 value={lastName}
-                                                onChange={(e) =>
-                                                    setlastName(e.target.value)
-                                                }
+                                                onChange={(e) => {
+                                                    setlastName(e.target.value);
+                                                    if (errors.lastName) {
+                                                        setErrors((prev) => ({ ...prev, lastName: '' }));
+                                                    }
+                                                }}
                                                 className="input input-placeholder"
                                                 required
                                             />
                                         </div>
+                                        {errors.lastName && (
+                                            <span className="error-message">{errors.lastName}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -122,13 +138,19 @@ const Register = () => {
                                                 placeholder="Email"
                                                 type="email"
                                                 value={email}
-                                                onChange={(e) =>
-                                                    setEmail(e.target.value)
-                                                }
+                                                onChange={(e) => {
+                                                    setEmail(e.target.value);
+                                                    if (errors.email) {
+                                                        setErrors((prev) => ({ ...prev, email: '' }));
+                                                    }
+                                                }}
                                                 className="input input-placeholder"
                                                 required
                                             />
                                         </div>
+                                        {errors.email && (
+                                            <span className="error-message">{errors.email}</span>
+                                        )}
                                     </div>
                                     <div className="column-container">
                                         <label
@@ -143,13 +165,19 @@ const Register = () => {
                                                 placeholder="Password"
                                                 type="password"
                                                 value={password}
-                                                onChange={(e) =>
-                                                    setPassword(e.target.value)
-                                                }
+                                                onChange={(e) => {
+                                                    setPassword(e.target.value);
+                                                    if (errors.password) {
+                                                        setErrors((prev) => ({ ...prev, password: '' }));
+                                                    }
+                                                }}
                                                 className="input input-placeholder"
                                                 required
                                             />
                                         </div>
+                                        {errors.password && (
+                                            <span className="error-message">{errors.password}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -165,9 +193,12 @@ const Register = () => {
                                         <select
                                             id="degree"
                                             value={degree}
-                                            onChange={(e) =>
-                                                setDegree(e.target.value)
-                                            }
+                                            onChange={(e) => {
+                                                setDegree(e.target.value);
+                                                if (errors.degree) {
+                                                    setErrors((prev) => ({ ...prev, degree: '' }));
+                                                }
+                                            }}
                                             className="select"
                                             required
                                         >
@@ -187,31 +218,47 @@ const Register = () => {
                                             </option>
                                         </select>
                                     </div>
+                                    {errors.degree && (
+                                        <span className="error-message">{errors.degree}</span>
+                                    )}
                                 </div>
                             </div>
-                            <div className="input-misc">
-                                <div className="remember-container">
-                                    <input
-                                        type="checkbox"
-                                        id="remember-checkbox"
-                                        onChange={() => setTerms(!termsChecked)}
-                                        checked={termsChecked}
-                                        required
-                                    />
-                                    <label
-                                        className="remember-label"
-                                        htmlFor="remember-checkbox"
-                                    >
-                                        I agree with&nbsp;
-                                        <a
-                                            className="font-gradient"
-                                            target="_blank"
-                                            href="https://github.com/elmalving/Hackathon-2023/blob/main/LICENSE"
+                            <div className="input-misc-container">
+                                <div className="input-misc">
+                                    <div className="remember-container">
+                                        <input
+                                            type="checkbox"
+                                            id="remember-checkbox"
+                                            onChange={() => {
+                                                setTerms(!termsChecked);
+                                                if (errors.termsChecked) {
+                                                    setErrors((prev) => ({ ...prev, termsChecked: '' }));
+                                                }
+                                            }}
+                                            checked={termsChecked}
+                                            required
+                                        />
+                                        <label
+                                            className="remember-label"
+                                            htmlFor="remember-checkbox"
                                         >
-                                            Terms and conditions
-                                        </a>
-                                    </label>
+                                            I agree with&nbsp;
+                                            <a
+                                                className="font-gradient"
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                href="https://github.com/elmalving/Hackathon-2023/blob/main/LICENSE"
+                                            >
+                                                Terms and conditions
+                                            </a>
+                                        </label>
+                                    </div>
                                 </div>
+                                {errors.termsChecked && (
+                                    <div className="error-message" style={{ marginTop: '8px' }}>
+                                        {errors.termsChecked}
+                                    </div>
+                                )}
                             </div>
                             <button
                                 className="submit-button submit-label"
