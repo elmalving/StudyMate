@@ -3,7 +3,7 @@ services:
     build: ./front-end
     container_name: front-end
     ports:
-      - '3000:4173'
+      - '4173:4173'
     stdin_open: true
     tty: true
   backend:
@@ -13,6 +13,8 @@ services:
       - '5000:5000'
     stdin_open: true
     tty: true
+    volumes:
+      - ./server:/app
     environment:
       - MONGODB_HOST=mongodb
       - REDIS_HOST=redis

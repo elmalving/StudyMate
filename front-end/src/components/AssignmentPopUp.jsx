@@ -38,6 +38,28 @@ const AssignmentPopUp = (args) => {
         };
     }, []);
 
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') {
+                args.onClose();
+            }
+        };
+
+        const handleClickOutside = (event) => {
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                args.onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('mousedown', handleClickOutside);
+
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [args]);
+
     const submitGrade = async () => {
         if (grade == '') {
             return;
@@ -107,6 +129,7 @@ const AssignmentPopUp = (args) => {
             ref={containerRef}
             className="popUp-container"
             data-testid="assignment-popup"
+            onClick={(e) => e.stopPropagation()}
         >
             <div className="align-right">
                 <button onClick={args.onClose} className="close">

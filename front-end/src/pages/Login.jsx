@@ -4,8 +4,13 @@ import { Link } from 'react-router-dom';
 import '../css/login.css';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState(() => {
+        return localStorage.getItem('remembered_email') || '';
+    });
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(() => {
+        return localStorage.getItem('remembered_email') ? true : false;
+    });
 
     const logInUser = async () => {
         try {
@@ -13,6 +18,12 @@ const Login = () => {
                 email,
                 password,
             });
+
+            if (rememberMe) {
+                localStorage.setItem('remembered_email', email);
+            } else {
+                localStorage.removeItem('remembered_email');
+            }
 
             window.location.href = '/';
         } catch (e) {
@@ -111,6 +122,8 @@ const Login = () => {
                                         type="checkbox"
                                         id="remember-checkbox"
                                         name="remember"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
                                     />
                                     <label
                                         className="remember-label"

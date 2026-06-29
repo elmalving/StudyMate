@@ -130,4 +130,46 @@ describe('Login', () => {
         const signUpLink = screen.getByRole('link', { name: /sign up/i });
         expect(signUpLink).toHaveAttribute('href', '/register');
     });
+
+    test('pre-fills email when remembered_email is stored in localStorage', () => {
+        localStorage.setItem('remembered_email', 'stored@example.com');
+        renderLogin();
+
+        expect(screen.getByPlaceholderText('Email')).toHaveValue('stored@example.com');
+        expect(screen.getByLabelText('Remember me')).toBeChecked();
+
+        localStorage.removeItem('remembered_email');
+    });
+
+    test('stores and clears email in localStorage depending on Remember me state', async () => {
+        const user = userEvent.setup();
+        httpClient.post.mockResolvedValue({ data: {} });
+
+        renderLogin();
+
+        const emailInput = screen.getByPlaceholderText('Email');
+        const passwordInput = screen.getByPlaceholderText('Password');
+        const rememberCheckbox = screen.getByLabelText('Remember me');
+
+        await user.type(emailInput, 'save@example.com');
+        await user.type(passwordInput, 'secret');
+        await user.click(rememberCheckbox);
+
+        expect(rememberCheckbox).toBeChecked();
+
+        await user.click(screen.getByRole('button', { name: /log in/i }));
+
+        await waitFor(() => {
+            expect(localStorage.getItem('remembered_email')).toBe('save@example.com');
+        });
+
+        await user.click(rememberCheckbox);
+        expect(rememberCheckbox).not.toBeChecked();
+
+        await user.click(screen.getByRole('button', { name: /log in/i }));
+
+        await waitFor(() => {
+            expect(localStorage.getItem('remembered_email')).toBeNull();
+        });
+    });
 });

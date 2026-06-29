@@ -9,3 +9,4 @@ redis
 requests
 openai
 pytest
+ddgs

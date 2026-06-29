@@ -1,10 +1,16 @@
 import { useRef, useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 import httpClient from '../httpClient';
 
 const Chat = () => {
-    const [messages, setMessages] = useState([]);
+    const {
+        chatMessages: messages,
+        setChatMessages: setMessages,
+        chatVisible: isVisible,
+        setChatVisible: setIsVisible,
+    } = useOutletContext();
     const [message, setInput] = useState('');
-    const [isVisible, setIsVisible] = useState(true);
     const messagesEndRef = useRef(null);
 
     const handleSubmit = (e) => {
@@ -16,23 +22,23 @@ const Chat = () => {
         if (message) {
             try {
                 setIsVisible(false);
-                setMessages((prev) => [...prev, message]);
+                setMessages((prev) => [...prev, { sender: 'user', text: message }]);
                 const responce = await httpClient.post(
                     '//localhost:5000/analyze_input',
                     {
                         message,
+                        history: messages,
                     }
                 );
-                setMessages((prev) => [...prev, responce.data['answer']]);
+                setMessages((prev) => [...prev, { sender: 'assistant', text: responce.data['answer'] }]);
                 if (
                     responce.data['answer'] !=
                     'Bot was unable to provide a satisfactory answer.'
                 ) {
                     responce.data['material'].forEach((e) => {
-                        setMessages((prev) => [...prev, e]);
+                        setMessages((prev) => [...prev, { sender: 'assistant', text: e }]);
                     });
                 }
-                console.log(messagesEndRef.current);
                 setInput('');
             } catch (e) {
                 if (e.response) {
@@ -67,11 +73,20 @@ const Chat = () => {
                 ) : (
                     <div className="chat-content-container">
                         <div className="chat-content">
-                            {messages.map((i, index) => (
-                                <div className="text" key={index}>
-                                    {i}
-                                </div>
-                            ))}
+                            {messages.map((msg, index) => {
+                                const isUser = msg.sender === 'user';
+                                return (
+                                    <div className={`message-bubble ${isUser ? 'user' : 'assistant'}`} key={index}>
+                                        {typeof msg.text === 'string' && msg.text.startsWith('http') ? (
+                                            <a href={msg.text} target="_blank" rel="noopener noreferrer">
+                                                {msg.text}
+                                            </a>
+                                        ) : (
+                                            <ReactMarkdown>{msg.text}</ReactMarkdown>
+                                        )}
+                                    </div>
+                                );
+                            })}
                             <div ref={messagesEndRef}></div>
                         </div>
                     </div>

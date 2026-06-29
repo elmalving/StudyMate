@@ -48,6 +48,9 @@ const Roote = () => {
     const currentPage = useLocation()['pathname'];
     const [loading, setLoading] = useState(true);
 
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [chatVisible, setChatVisible] = useState<boolean>(true);
+
     useEffect(() => {
         (async () => {
             try {
@@ -71,11 +74,11 @@ const Roote = () => {
             {loading ? (
                 <></>
             ) : user === null ? (
-                <Outlet />
+                <Outlet context={{ chatMessages, setChatMessages, chatVisible, setChatVisible }} />
             ) : (
                 <>
                     <Navbar />
-                    <Outlet />
+                    <Outlet context={{ chatMessages, setChatMessages, chatVisible, setChatVisible }} />
                 </>
             )}
         </div>
