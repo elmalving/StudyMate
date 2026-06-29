@@ -27,8 +27,8 @@ const PerformanceTrendChart: React.FC<Props> = ({ data }) => {
                 <Line
                     type="monotone"
                     dataKey="grade"
-                    stroke="#82ca9d"
-                    dot={{ fill: '#82ca9d', r: 4 }}
+                    stroke="var(--accent-color)"
+                    dot={{ fill: 'var(--accent-color)', r: 4 }}
                     activeDot={{ r: 6 }}
                 />
             </LineChart>

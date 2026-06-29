@@ -4,7 +4,7 @@
     width: 15%;
     height: 3%;
     border-radius: 8px;
-    background: #1a1d21;
+    background: var(--noble-black-600);
     border: 1px solid var(--noble-black-500, #363a3d);
 }
 .email-container select {
@@ -52,7 +52,7 @@
     width: 7vh;
     height: 7vh;
     border-radius: 0.5vh;
-    border: 0.2vh solid var(--light-grey, #c6c6c6);
+    border: 0.2vh solid var(--border-color);
     cursor: pointer;
     font-family: Plus Jakarta Sans;
     font-size: 1.4vh;
@@ -116,7 +116,7 @@
 .model-label {
     display: flex;
     flex: 1;
-    color: #fff;
+    color: var(--text-color);
     font-family: Roboto;
     font-size: 15.5px;
     font-style: normal;
