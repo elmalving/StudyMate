@@ -5,29 +5,25 @@ import pytest
 import api
 
 def test_searchassistant_urls_to_json():
-    sa = api.SearchAssistant(bing_api_key="x")
+    sa = api.SearchAssistant()
     out = sa.urls_to_json(["https://a.com", "https://b.com"])
     parsed = json.loads(out)
     assert parsed["urls"] == ["https://a.com", "https://b.com"]
 
 
 def test_searchassistant_search_success(monkeypatch):
-    sa = api.SearchAssistant(bing_api_key="x")
+    sa = api.SearchAssistant()
 
-    fake_response = MagicMock()
-    fake_response.raise_for_status.return_value = None
-    fake_response.json.return_value = {
-        "webPages": {
-            "value": [{"url": "https://example.com/1"}, {"url": "https://example.com/2"}]
-        }
-    }
+    class FakeDDGS:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+        def text(self, query, max_results=5):
+            assert query == "hello"
+            return [{"href": "https://example.com/1"}, {"href": "https://example.com/2"}]
 
-    def fake_get(url, headers=None, params=None):
-        assert "Ocp-Apim-Subscription-Key" in headers
-        assert params["q"] == "hello"
-        return fake_response
-
-    monkeypatch.setattr(api.requests, "get", fake_get)
+    monkeypatch.setattr(api, "DDGS", FakeDDGS)
 
     out = sa.search("hello")
     parsed = json.loads(out)
@@ -35,56 +31,89 @@ def test_searchassistant_search_success(monkeypatch):
 
 
 def test_searchassistant_search_raises(monkeypatch):
-    sa = api.SearchAssistant(bing_api_key="x")
+    sa = api.SearchAssistant()
 
-    def fake_get(*args, **kwargs):
-        raise RuntimeError("network down")
+    class FakeDDGS:
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+        def text(self, query, max_results=5):
+            raise RuntimeError("network down")
 
-    monkeypatch.setattr(api.requests, "get", fake_get)
+    monkeypatch.setattr(api, "DDGS", FakeDDGS)
 
     with pytest.raises(RuntimeError):
         sa.search("hello")
 
 
 def test_aiassistant_create_test_json(monkeypatch):
+    class FakeChatCompletions:
+        def create(self, **kwargs):
+            assert kwargs["model"] == "gpt-4o-mini"
+            assert kwargs["max_tokens"] == 1024
+            
+            mock_message = MagicMock()
+            mock_message.content = " {\"questions\": [] } "
+            mock_choice = MagicMock()
+            mock_choice.message = mock_message
+            mock_response = MagicMock()
+            mock_response.choices = [mock_choice]
+            return mock_response
+
+    class FakeClient:
+        def __init__(self, api_key):
+            self.chat = MagicMock()
+            self.chat.completions = FakeChatCompletions()
+
+    monkeypatch.setattr(api.openai, "OpenAI", FakeClient)
+
     ai = api.AIAssistant(openai_api_key="k")
-
-    fake = {"choices": [{"text": " {\"questions\": [] } "}]}
-
-    def fake_create(**kwargs):
-        assert kwargs["model"] == "gpt-4o-mini"
-        assert kwargs["max_tokens"] == 1024
-        return fake
-
-    monkeypatch.setattr(api.openai.Completion, "create", fake_create)
-
     out = ai.create_test_json("math")
     assert out.strip() == "{\"questions\": [] }"
 
 
 def test_aiassistant_answer_question_sets_current_answer(monkeypatch):
+    class FakeChatCompletions:
+        def create(self, **kwargs):
+            mock_message = MagicMock()
+            mock_message.content = "The answer is 42"
+            mock_choice = MagicMock()
+            mock_choice.message = mock_message
+            mock_response = MagicMock()
+            mock_response.choices = [mock_choice]
+            return mock_response
+
+    class FakeClient:
+        def __init__(self, api_key):
+            self.chat = MagicMock()
+            self.chat.completions = FakeChatCompletions()
+
+    monkeypatch.setattr(api.openai, "OpenAI", FakeClient)
+
     ai = api.AIAssistant(openai_api_key="k")
-
-    fake = {"choices": [{"text": "The answer is 42"}]}
-
-    def fake_create(**kwargs):
-        return fake
-
-    monkeypatch.setattr(api.openai.Completion, "create", fake_create)
-
     ai.answer_question("What is life")
     assert ai.current_answer == "The answer is 42"
 
 
 def test_aiassistant_answer_question_handles_sorry(monkeypatch):
+    class FakeChatCompletions:
+        def create(self, **kwargs):
+            mock_message = MagicMock()
+            mock_message.content = "I'm sorry, I dont know."
+            mock_choice = MagicMock()
+            mock_choice.message = mock_message
+            mock_response = MagicMock()
+            mock_response.choices = [mock_choice]
+            return mock_response
+
+    class FakeClient:
+        def __init__(self, api_key):
+            self.chat = MagicMock()
+            self.chat.completions = FakeChatCompletions()
+
+    monkeypatch.setattr(api.openai, "OpenAI", FakeClient)
+
     ai = api.AIAssistant(openai_api_key="k")
-
-    fake = {"choices": [{"text": "I'm sorry, I dont know."}]}
-
-    def fake_create(**kwargs):
-        return fake
-
-    monkeypatch.setattr(api.openai.Completion, "create", fake_create)
-
     ai.answer_question("Hard question")
     assert ai.current_answer == "Bot was unable to provide a satisfactory answer."

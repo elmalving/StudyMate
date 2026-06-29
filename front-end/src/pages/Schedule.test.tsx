@@ -198,4 +198,54 @@ describe('Schedule', () => {
             await screen.findByTestId('assignment-popup')
         ).toBeInTheDocument();
     });
+
+    test('closes popup when Escape key is pressed', async () => {
+        const user = userEvent.setup();
+
+        mockGetImplementation({
+            meEmail: 'test@gmail.com',
+            allEmails: [],
+            assignmentsByEmail: {
+                'test@gmail.com': [],
+            },
+        });
+
+        render(<Schedule />);
+
+        const rect0 = screen.getByTestId('schedule-rect-0');
+        await user.click(rect0);
+
+        expect(await screen.findByLabelText('Subject')).toBeInTheDocument();
+
+        await user.keyboard('{Escape}');
+
+        await waitFor(() => {
+            expect(screen.queryByLabelText('Subject')).not.toBeInTheDocument();
+        });
+    });
+
+    test('closes popup when clicking outside the popup', async () => {
+        const user = userEvent.setup();
+
+        mockGetImplementation({
+            meEmail: 'test@gmail.com',
+            allEmails: [],
+            assignmentsByEmail: {
+                'test@gmail.com': [],
+            },
+        });
+
+        render(<Schedule />);
+
+        const rect0 = screen.getByTestId('schedule-rect-0');
+        await user.click(rect0);
+
+        expect(await screen.findByLabelText('Subject')).toBeInTheDocument();
+
+        await user.click(document.body);
+
+        await waitFor(() => {
+            expect(screen.queryByLabelText('Subject')).not.toBeInTheDocument();
+        });
+    });
 });

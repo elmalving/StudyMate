@@ -1,25 +1,18 @@
 import requests
 import json
 import openai
+from ddgs import DDGS
 
 
 class SearchAssistant:
-    bing_endpoint = "https://api.bing.microsoft.com/v7.0/search"
-
-    def __init__(self, bing_api_key):
-        self.bing_api_key = bing_api_key
+    def __init__(self):
         self.urls_json = None
 
     def search(self, query):
-        mkt = 'en-US'
-        params = {'q': query, 'mkt': mkt}
-        headers = {'Ocp-Apim-Subscription-Key': self.bing_api_key}
-
         try:
-            response = requests.get(self.bing_endpoint, headers=headers, params=params)
-            response.raise_for_status()
-            json_data = response.json()
-            results_prompts = [f"{result['url']}" for result in json_data["webPages"]["value"]]
+            with DDGS() as ddgs:
+                results = list(ddgs.text(query, max_results=5))
+            results_prompts = [result['href'] for result in results if 'href' in result]
 
             self.urls_to_json(results_prompts)
 
@@ -36,7 +29,7 @@ class SearchAssistant:
 
 class AIAssistant:
     def __init__(self, openai_api_key):
-        self.openai_api_key = openai_api_key
+        self.client = openai.OpenAI(api_key=openai_api_key)
         self.current_answer = None
 
     def create_test_json(self, topic):
@@ -60,40 +53,39 @@ class AIAssistant:
             "}"
         )
 
-        openai.api_key = self.openai_api_key
-        response = openai.Completion.create(
+        response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": f"Create a test about {topic}."}
             ],
             max_tokens=1024,
-            n=1,
-            stop=None,
             temperature=0.7,
         )
-        answer = response["choices"][0]["text"].strip()
+        answer = response.choices[0].message.content.strip()
         return answer
 
     def extract_topic(self, question):
-        extract_prompt = "Extract the main topic of the question, to find the answer by myself.\n"
-        prompt = f"{extract_prompt}\n\n{question}?"
+        system_instruction = (
+            "You are a search query extractor. Analyze the user's input. "
+            "If the input is a specific question or study topic that would benefit from a web search for educational resources (e.g., 'Newton's laws', 'how does photosynthesis work', 'calculus derivatives'), extract and return ONLY a concise search query (1-4 keywords) optimized for DuckDuckGo. "
+            "If the input is too general, a greeting, casual conversation, off-topic, or doesn't make sense to search on the web (e.g., 'hi', 'thank you', 'ok', 'can you help me', 'what is my schedule'), respond with exactly 'NONE'."
+        )
 
-        openai.api_key = self.openai_api_key
-        response = openai.Completion.create(
+        response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": question}
             ],
-            max_tokens=1024,
-            n=1,
-            stop=None,
-            temperature=0.7,
+            max_tokens=50,
+            temperature=0.3,
         )
-        answer = response["choices"][0]["text"].strip()
+        answer = response.choices[0].message.content.strip()
+        answer = answer.strip('\'"` ')
         return answer
 
-    def answer_question(self, question, schedule_and_progress_context=None):
+    def answer_question(self, question, history=None, schedule_and_progress_context=None):
         assistant_prompt = (
             "You are StudyMate AI, an expert, encouraging, and highly professional study assistant and tutor. "
             "Your goal is to help students learn conveniently and efficiently.\n\n"
@@ -112,21 +104,25 @@ class AIAssistant:
                 "where relevant, offering targeted study tips or positive reinforcement."
             )
 
-        prompt = f"{assistant_prompt}\n\n{question}?"
+        messages = [
+            {"role": "system", "content": assistant_prompt}
+        ]
 
-        openai.api_key = self.openai_api_key
-        response = openai.Completion.create(
+        if history:
+            for msg in history:
+                role = "user" if msg.get("sender") == "user" else "assistant"
+                messages.append({"role": role, "content": msg.get("text", "")})
+
+        messages.append({"role": "user", "content": question})
+
+        response = self.client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+            messages=messages,
             max_tokens=1024,
-            n=1,
-            stop=None,
             temperature=0.7,
         )
 
-        answer = response["choices"][0]["text"].strip()
+        answer = response.choices[0].message.content.strip()
 
         if "I'm sorry" in answer:
             self.current_answer = "Bot was unable to provide a satisfactory answer."

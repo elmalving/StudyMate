@@ -45,7 +45,6 @@ input:-webkit-autofill:active {
     width: 100%;
     height: 100vh;
     gap: 1.2vh;
-    border-radius: 2.4vh;
     background: var(--noble-black-700, #131619);
     overflow: hidden;
 }

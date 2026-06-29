@@ -64,13 +64,22 @@ describe('Register', () => {
         renderRegister();
 
         expect(screen.getByPlaceholderText('First Name')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('First Name')).toBeRequired();
+
         expect(screen.getByPlaceholderText('Last Name')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Last Name')).toBeRequired();
+
         expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Email')).toBeRequired();
+
         expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Password')).toBeRequired();
 
         expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toBeRequired();
 
         expect(screen.getByRole('checkbox')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox')).toBeRequired();
 
         expect(
             screen.getByRole('button', { name: /create an account/i })
@@ -80,7 +89,7 @@ describe('Register', () => {
         expect(loginLink).toHaveAttribute('href', '/login');
     });
 
-    test('does not call API if terms are NOT checked', async () => {
+    test('does not call API if terms are NOT checked and displays error message', async () => {
         const user = userEvent.setup();
         renderRegister();
 
@@ -91,9 +100,10 @@ describe('Register', () => {
         );
 
         expect(httpClient.post).not.toHaveBeenCalled();
+        expect(screen.getByText('You must agree to the Terms and conditions')).toBeInTheDocument();
     });
 
-    test('does not call API if a required field is missing (example: degree)', async () => {
+    test('does not call API if a required field is missing (example: degree) and displays error message', async () => {
         const user = userEvent.setup();
         renderRegister();
 
@@ -103,7 +113,26 @@ describe('Register', () => {
         );
 
         expect(httpClient.post).not.toHaveBeenCalled();
+        expect(screen.getByText('Current Degree is required')).toBeInTheDocument();
     });
+
+    test('displays all error messages when form is submitted empty', async () => {
+        const user = userEvent.setup();
+        renderRegister();
+
+        await user.click(
+            screen.getByRole('button', { name: /create an account/i })
+        );
+
+        expect(httpClient.post).not.toHaveBeenCalled();
+        expect(screen.getByText('First Name is required')).toBeInTheDocument();
+        expect(screen.getByText('Last Name is required')).toBeInTheDocument();
+        expect(screen.getByText('Email is required')).toBeInTheDocument();
+        expect(screen.getByText('Password is required')).toBeInTheDocument();
+        expect(screen.getByText('Current Degree is required')).toBeInTheDocument();
+        expect(screen.getByText('You must agree to the Terms and conditions')).toBeInTheDocument();
+    });
+
 
     test('successful signup calls API and redirects to /', async () => {
         const user = userEvent.setup();
