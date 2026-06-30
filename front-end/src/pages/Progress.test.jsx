@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import Progress from './Progress';
-import httpClient from '../httpClient.jsx';
+import httpClient from '../httpClient';
 
-jest.mock('../httpClient.jsx', () => ({
+jest.mock('../httpClient', () => ({
     __esModule: true,
     default: { get: jest.fn() },
 }));

@@ -1,5 +1,5 @@
-import React, { useRef, useState, useEffect } from 'react';
-import httpClient from '../httpClient.jsx';
+import { useRef, useState, useEffect } from 'react';
+import httpClient from '../httpClient';
 import '../css/popUp.css';
 
 const AssignmentPopUp = (args) => {
@@ -181,6 +181,7 @@ const AssignmentPopUp = (args) => {
                                     <div className="value-box">
                                         <a
                                             target="_blank"
+                                            rel="noreferrer"
                                             href={assignment.url}
                                         >
                                             {assignment.url}

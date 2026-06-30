@@ -17,4 +17,13 @@ module.exports = {
             { allowConstantExport: true },
         ],
     },
+    overrides: [
+        {
+            files: ['**/*.test.{js,jsx,ts,tsx}', '**/setupTests.js'],
+            env: {
+                jest: true,
+                node: true,
+            },
+        },
+    ],
 };

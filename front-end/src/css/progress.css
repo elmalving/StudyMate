@@ -3,15 +3,15 @@
     padding: 24px;
     min-height: 100%;
     box-sizing: border-box;
-    background: linear-gradient(135deg, #131619 0%, #1a1d21 100%);
+    background: linear-gradient(135deg, var(--noble-black-700) 0%, var(--noble-black-600) 100%);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-stroke);
 }
 
 .progress-title {
     text-align: center;
     font-size: 2rem;
-    color: #ffffff;
+    color: var(--noble-black-0);
     margin: 0 0 24px;
     font-weight: 700;
     font-family: Plus Jakarta Sans, sans-serif;
@@ -26,8 +26,8 @@
 }
 
 .chart-box {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--noble-black-600);
+    border: 1px solid var(--glass-stroke);
     border-radius: 16px;
     padding: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -41,10 +41,10 @@
 
 .chart-box h2 {
     font-size: 1.1rem;
-    color: #f5f7fa;
+    color: var(--noble-black-100);
     margin: 0 0 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid var(--glass-stroke);
     font-family: Plus Jakarta Sans, sans-serif;
     font-weight: 600;
 }

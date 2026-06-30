@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import httpClient from '../httpClient';
 import { Link, useLocation } from 'react-router-dom';
-import { User } from '../types.ts';
+import { User } from '../types';
 import '../css/style.css';
 
 const Navbar = () => {
@@ -216,37 +216,6 @@ const Navbar = () => {
                                     </svg>
                                 </div>
                                 <div className="navbar-link">Progress</div>
-                            </div>
-                        </Link>
-                    </div>
-                    <div className={`link-container`}>
-                        <Link to={'/settings'}>
-                            <div
-                                className={`link-box${currentPage === '/settings' ? ' current-page' : ''}`}
-                            >
-                                <div className="link-icon settings-link-icon">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                    >
-                                        <path
-                                            d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"
-                                            stroke="currentColor"
-                                            strokeWidth="1.5"
-                                        />
-                                        <path
-                                            d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2 2 0 0 1-2.83 2.83l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.66V21a2 2 0 0 1-4 0v-.06a1.8 1.8 0 0 0-1.12-1.66 1.8 1.8 0 0 0-1.98.36l-.04.04a2 2 0 0 1-2.83-2.83l.04-.04a1.8 1.8 0 0 0 .36-1.98 1.8 1.8 0 0 0-1.66-1.1H2.6a2 2 0 0 1 0-4h.06a1.8 1.8 0 0 0 1.66-1.12 1.8 1.8 0 0 0-.36-1.98l-.04-.04a2 2 0 0 1 2.83-2.83l.04.04a1.8 1.8 0 0 0 1.98.36 1.8 1.8 0 0 0 1.1-1.66V2.6a2 2 0 0 1 4 0v.06a1.8 1.8 0 0 0 1.12 1.66 1.8 1.8 0 0 0 1.98-.36l.04-.04a2 2 0 0 1 2.83 2.83l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.66 1.1h.06a2 2 0 0 1 0 4h-.06A1.8 1.8 0 0 0 19.4 15Z"
-                                            stroke="currentColor"
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
-                                </div>
-                                <div className="navbar-link">Settings</div>
                             </div>
                         </Link>
                     </div>
@@ -685,7 +654,7 @@ const Navbar = () => {
                         {user ? user.name : 'Unauthorized'}
                     </div>
                     <div className="icon">
-                        <a href="#">
+                        <Link to={'/settings'}>
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="24"
@@ -708,7 +677,7 @@ const Navbar = () => {
                                     strokeLinejoin="round"
                                 />
                             </svg>
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

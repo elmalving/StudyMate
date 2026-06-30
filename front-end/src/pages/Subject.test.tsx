@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import Subject from './Subject';
-import httpClient from '../httpClient.jsx';
+import httpClient from '../httpClient';
 import { useLocation } from 'react-router-dom';
 
 jest.mock('react-router-dom', () => {
@@ -8,7 +8,7 @@ jest.mock('react-router-dom', () => {
     return { ...actual, useLocation: jest.fn() };
 });
 
-jest.mock('../httpClient.jsx', () => ({
+jest.mock('../httpClient', () => ({
     __esModule: true,
     default: { get: jest.fn() },
 }));

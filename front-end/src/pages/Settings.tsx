@@ -8,6 +8,7 @@ import {
     getStoredAccentColor,
     getStoredTheme,
 } from '../theme';
+import '../css/settings.css';
 
 const Settings = () => {
     const [theme, setTheme] = useState<Theme>(getStoredTheme);

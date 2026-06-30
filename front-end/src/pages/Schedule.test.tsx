@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Schedule from './Schedule';
-import httpClient from '../httpClient.jsx';
-import { Assignment, User } from '../types.js';
+import httpClient from '../httpClient';
+import { Assignment, User } from '../types';
 
-jest.mock('../httpClient.jsx', () => ({
+jest.mock('../httpClient', () => ({
     get: jest.fn(),
 }));
 
