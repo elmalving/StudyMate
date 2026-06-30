@@ -16,9 +16,13 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import Subject from './pages/Subject';
+import Settings from './pages/Settings';
 import { User } from './types';
 import httpClient from './httpClient';
+import { applyThemeSettings } from './theme';
 import './css/main.css';
+
+applyThemeSettings();
 
 function App() {
     const router = createBrowserRouter(
@@ -30,6 +34,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/subject" element={<Subject />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<NotFound />} />
             </Route>
         )

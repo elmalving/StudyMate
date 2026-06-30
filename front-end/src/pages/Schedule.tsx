@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import httpClient from '../httpClient.jsx';
-import AssignmentPopUp from '../components/AssignmentPopUp.jsx';
-import { User, Assignment } from '../types.ts';
+import httpClient from '../httpClient';
+import AssignmentPopUp from '../components/AssignmentPopUp';
+import { User, Assignment } from '../types';
 import '../css/schedule.css';
 
 const Schedule = () => {

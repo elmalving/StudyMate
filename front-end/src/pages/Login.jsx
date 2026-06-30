@@ -54,7 +54,7 @@ const Login = () => {
                             </div>
                             <div className="login-welcome-text">
                                 Log in to StudyMate to start your learning
-                                adventure today. Let's achieve your learning
+                                adventure today. Let&apos;s achieve your learning
                                 goals together!
                             </div>
                         </div>
@@ -220,7 +220,7 @@ const Login = () => {
                     </div>
                 </div>
                 <div className="align-left font-social">
-                    Don't have an account?&nbsp;
+                    Don&apos;t have an account?&nbsp;
                     <Link className="font-gradient" to={'/register'}>
                         Sign Up
                     </Link>

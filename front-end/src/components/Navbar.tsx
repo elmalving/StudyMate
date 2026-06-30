@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import httpClient from '../httpClient';
 import { Link, useLocation } from 'react-router-dom';
-import { User } from '../types.ts';
+import { User } from '../types';
 import '../css/style.css';
 
 const Navbar = () => {
@@ -654,7 +654,7 @@ const Navbar = () => {
                         {user ? user.name : 'Unauthorized'}
                     </div>
                     <div className="icon">
-                        <a href="#">
+                        <Link to={'/settings'}>
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="24"
@@ -677,7 +677,7 @@ const Navbar = () => {
                                     strokeLinejoin="round"
                                 />
                             </svg>
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

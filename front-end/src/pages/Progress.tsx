@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import httpClient from '../httpClient.jsx';
+import httpClient from '../httpClient';
 import GradeBySubjectChart from '../components/GradeBySubjectChart';
 import PerformanceTrendChart from '../components/PerformanceTrendChart';
 import DifficultyChart from '../components/DifficultyChart';

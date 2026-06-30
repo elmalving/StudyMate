@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Assignment } from '../types.ts';
-import httpClient from '../httpClient.jsx';
+import { Assignment } from '../types';
+import httpClient from '../httpClient';
 import '../css/subject.css';
 
 const Subject = () => {

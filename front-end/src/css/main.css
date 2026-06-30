@@ -2,8 +2,76 @@
 @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
 
+:root {
+    --noble-black-0: #fff;
+    --noble-black-100: #e8e9e9;
+    --noble-black-200: #cdcecf;
+    --Noble-Black-200: #cdcecf;
+    --noble-black-300: #9b9c9e;
+    --noble-black-400: #686b6e;
+    --Noble-Black-400: #686b6e;
+    --noble-black-500: #363a3d;
+    --noble-black-600: #1a1d21;
+    --Noble-Black-600: #1a1d21;
+    --noble-black-700: #131619;
+    --noble-black-800: #0d0f10;
+    --glass-stroke: rgba(255, 255, 255, 0.08);
+    --border-color: var(--noble-black-500, #363a3d);
+    --text-color: var(--noble-black-0, #fff);
+    --user-bubble-bg: #2a3136;
+    --user-bubble-color: #fff;
+    --assistant-bubble-bg: #1a1f23;
+    --assistant-bubble-color: #e8e9e9;
+}
+
+[data-theme="light"] {
+    --noble-black-0: #0d0f10;
+    --noble-black-100: #131619;
+    --noble-black-200: #33373b;
+    --Noble-Black-200: #33373b;
+    --noble-black-300: #5c6266;
+    --noble-black-400: #7b8185;
+    --Noble-Black-400: #7b8185;
+    --noble-black-500: #d8dadc;
+    --noble-black-600: #f1f3f5;
+    --Noble-Black-600: #f1f3f5;
+    --noble-black-700: #f8f9fa;
+    --noble-black-800: #ffffff;
+    --glass-stroke: rgba(0, 0, 0, 0.08);
+    --border-color: var(--noble-black-500);
+    --text-color: var(--noble-black-0);
+    --user-bubble-bg: #e1e4e6;
+    --user-bubble-color: #0d0f10;
+    --assistant-bubble-bg: #f1f3f5;
+    --assistant-bubble-color: #131619;
+}
+
+[data-theme="dark"] {
+    --noble-black-0: #fff;
+    --noble-black-100: #e8e9e9;
+    --noble-black-200: #cdcecf;
+    --Noble-Black-200: #cdcecf;
+    --noble-black-300: #9b9c9e;
+    --noble-black-400: #686b6e;
+    --Noble-Black-400: #686b6e;
+    --noble-black-500: #363a3d;
+    --noble-black-600: #1a1d21;
+    --Noble-Black-600: #1a1d21;
+    --noble-black-700: #131619;
+    --noble-black-800: #0d0f10;
+    --glass-stroke: rgba(255, 255, 255, 0.08);
+    --border-color: var(--noble-black-500);
+    --text-color: var(--noble-black-0);
+    --user-bubble-bg: #2a3136;
+    --user-bubble-color: #fff;
+    --assistant-bubble-bg: #1a1f23;
+    --assistant-bubble-color: #e8e9e9;
+}
+
 body {
     margin: 0;
+    background: var(--noble-black-700);
+    color: var(--noble-black-100);
 }
 
 ::-webkit-scrollbar {

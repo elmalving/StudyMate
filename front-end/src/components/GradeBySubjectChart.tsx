@@ -23,7 +23,7 @@ const GradeBySubjectChart: React.FC<Props> = ({ data }) => {
                 <YAxis domain={[0, 100]} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="average_grade" fill="#8884d8" name="Average Grade" />
+                <Bar dataKey="average_grade" fill="var(--accent-color)" name="Average Grade" />
             </BarChart>
         </ResponsiveContainer>
     );
