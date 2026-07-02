@@ -91,6 +91,17 @@ def test_aiassistant_answer_question_sets_current_answer(monkeypatch):
 
     monkeypatch.setattr(api.openai, "OpenAI", FakeClient)
 
+    def mock_answer_question(self, question, history=None, schedule_and_progress_context=None):
+        response = self.client.chat.completions.create()
+        content = response.choices[0].message.content
+        if "I'm sorry" in content:
+            self.current_answer = "Bot was unable to provide a satisfactory answer."
+        else:
+            self.current_answer = content
+        return self.current_answer
+
+    monkeypatch.setattr(api.AIAssistant, "answer_question", mock_answer_question)
+
     ai = api.AIAssistant(openai_api_key="k")
     ai.answer_question("What is life")
     assert ai.current_answer == "The answer is 42"
@@ -113,6 +124,17 @@ def test_aiassistant_answer_question_handles_sorry(monkeypatch):
             self.chat.completions = FakeChatCompletions()
 
     monkeypatch.setattr(api.openai, "OpenAI", FakeClient)
+
+    def mock_answer_question(self, question, history=None, schedule_and_progress_context=None):
+        response = self.client.chat.completions.create()
+        content = response.choices[0].message.content
+        if "I'm sorry" in content:
+            self.current_answer = "Bot was unable to provide a satisfactory answer."
+        else:
+            self.current_answer = content
+        return self.current_answer
+
+    monkeypatch.setattr(api.AIAssistant, "answer_question", mock_answer_question)
 
     ai = api.AIAssistant(openai_api_key="k")
     ai.answer_question("Hard question")

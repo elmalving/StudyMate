@@ -253,7 +253,7 @@ def create_app():
         def generate():
             # 1. Answer the question using AI assistant (streamed)
             try:
-                for chunk in ai.answer_question_stream(
+                for chunk in ai.answer_question(
                     message, history=history, schedule_and_progress_context=schedule_and_progress_context
                 ):
                     yield py_json.dumps({"type": "content", "text": chunk}) + "\n"
