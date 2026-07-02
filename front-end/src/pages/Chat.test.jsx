@@ -1,11 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Chat from './Chat';
-import httpClient from '../httpClient';
 
-jest.mock('../httpClient', () => ({
-    post: jest.fn(),
-}));
+if (typeof global.TextEncoder === 'undefined') {
+    const { TextEncoder, TextDecoder } = require('util');
+    global.TextEncoder = TextEncoder;
+    global.TextDecoder = TextDecoder;
+}
 
 jest.mock('react-router-dom', () => {
     const actual = jest.requireActual('react-router-dom');
@@ -27,6 +28,7 @@ jest.mock('react-router-dom', () => {
 
 beforeEach(() => {
     jest.clearAllMocks();
+    delete global.fetch;
 
     Element.prototype.scrollIntoView = jest.fn();
 });
@@ -62,10 +64,30 @@ describe('Chat', () => {
     test('sending message calls backend, hides welcome, renders messages + material, clears input', async () => {
         const user = userEvent.setup();
 
-        httpClient.post.mockResolvedValueOnce({
-            data: {
-                answer: 'Here is the answer',
-                material: ['Extra 1', 'Extra 2'],
+        const chunks = [
+            JSON.stringify({ type: 'content', text: 'Here is ' }) + '\n',
+            JSON.stringify({ type: 'content', text: 'the answer' }) + '\n',
+            JSON.stringify({ type: 'material', urls: ['Extra 1', 'Extra 2'] }) + '\n'
+        ];
+
+        global.fetch = jest.fn().mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            body: {
+                getReader: () => {
+                    let idx = 0;
+                    return {
+                        read: () => {
+                            if (idx < chunks.length) {
+                                return Promise.resolve({
+                                    value: new TextEncoder().encode(chunks[idx++]),
+                                    done: false,
+                                });
+                            }
+                            return Promise.resolve({ value: undefined, done: true });
+                        },
+                    };
+                },
             },
         });
 
@@ -83,10 +105,16 @@ describe('Chat', () => {
             ).not.toBeInTheDocument();
         });
 
-        expect(httpClient.post).toHaveBeenCalledTimes(1);
-        expect(httpClient.post).toHaveBeenCalledWith(
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        expect(global.fetch).toHaveBeenCalledWith(
             '//localhost:5000/analyze_input',
-            { message: 'My question', history: [] }
+            expect.objectContaining({
+                method: 'POST',
+                body: JSON.stringify({
+                    message: 'My question',
+                    history: [],
+                }),
+            })
         );
 
         expect(await screen.findByText('My question')).toBeInTheDocument();
@@ -110,10 +138,29 @@ describe('Chat', () => {
     test('does NOT render material when answer is fallback string', async () => {
         const user = userEvent.setup();
 
-        httpClient.post.mockResolvedValueOnce({
-            data: {
-                answer: 'Bot was unable to provide a satisfactory answer.',
-                material: ['Should not show'],
+        const chunks = [
+            JSON.stringify({ type: 'content', text: 'Bot was unable to provide a satisfactory answer.' }) + '\n',
+            JSON.stringify({ type: 'material', urls: ['Should not show'] }) + '\n'
+        ];
+
+        global.fetch = jest.fn().mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            body: {
+                getReader: () => {
+                    let idx = 0;
+                    return {
+                        read: () => {
+                            if (idx < chunks.length) {
+                                return Promise.resolve({
+                                    value: new TextEncoder().encode(chunks[idx++]),
+                                    done: false,
+                                });
+                            }
+                            return Promise.resolve({ value: undefined, done: true });
+                        },
+                    };
+                },
             },
         });
 
@@ -137,12 +184,14 @@ describe('Chat', () => {
 
     test('does not call backend when message is empty', async () => {
         const user = userEvent.setup();
+        global.fetch = jest.fn();
+
         render(<Chat />);
 
         const sendButton = screen.getByRole('button');
         await user.click(sendButton);
 
-        expect(httpClient.post).not.toHaveBeenCalled();
+        expect(global.fetch).not.toHaveBeenCalled();
         expect(screen.getByText('Welcome to StudyMate')).toBeInTheDocument();
     });
 
@@ -150,8 +199,9 @@ describe('Chat', () => {
         const user = userEvent.setup();
         jest.spyOn(window, 'alert').mockImplementation(() => {});
 
-        httpClient.post.mockRejectedValueOnce({
-            response: { status: 401 },
+        global.fetch = jest.fn().mockResolvedValueOnce({
+            ok: false,
+            status: 401,
         });
 
         render(<Chat />);
@@ -173,8 +223,9 @@ describe('Chat', () => {
         const user = userEvent.setup();
         const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
-        httpClient.post.mockRejectedValueOnce({
-            response: { status: 500 },
+        global.fetch = jest.fn().mockResolvedValueOnce({
+            ok: false,
+            status: 500,
         });
 
         render(<Chat />);

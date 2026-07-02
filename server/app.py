@@ -240,38 +240,41 @@ def create_app():
 
         import os
         from api import AIAssistant, SearchAssistant
+        import json as py_json
         
         openai_key = os.environ.get("OPENAI_API_KEY", "mock-key")
         
         ai = AIAssistant(openai_api_key=openai_key)
         sa = SearchAssistant()
-        
-        # 1. Answer the question using AI assistant
-        try:
-            ai.answer_question(message, history=history, schedule_and_progress_context=schedule_and_progress_context)
-            answer = ai.current_answer
-        except Exception as e:
-            # Fallback in case of API issues
-            answer = f"Error processing request: {str(e)}"
 
-        # 2. Extract the topic and search the web for resources
-        try:
-            topic = ai.extract_topic(message)
-            if topic and topic.upper() != "NONE":
-                urls_json_str = sa.search(topic)
-                import json as py_json
-                urls_data = py_json.loads(urls_json_str)
-                material = urls_data.get('urls', [])
-            else:
+        from flask import Response, stream_with_context
+
+        @stream_with_context
+        def generate():
+            # 1. Answer the question using AI assistant (streamed)
+            try:
+                for chunk in ai.answer_question_stream(
+                    message, history=history, schedule_and_progress_context=schedule_and_progress_context
+                ):
+                    yield py_json.dumps({"type": "content", "text": chunk}) + "\n"
+            except Exception as e:
+                yield py_json.dumps({"type": "error", "text": f"Error processing request: {str(e)}"}) + "\n"
+
+            # 2. Extract the topic and search the web for resources
+            try:
+                topic = ai.extract_topic(message)
+                if topic and topic.upper() != "NONE":
+                    urls_json_str = sa.search(topic)
+                    urls_data = py_json.loads(urls_json_str)
+                    material = urls_data.get('urls', [])
+                else:
+                    material = []
+            except Exception:
                 material = []
-        except Exception:
-            # Fallback if search or topic extraction fails
-            material = []
 
-        return jsonify({
-            'answer': answer,
-            'material': material
-        })
+            yield py_json.dumps({"type": "material", "urls": material}) + "\n"
+
+        return Response(generate(), mimetype='application/x-ndjson')
 
 
     @app.route('/stats/grades-by-subject', methods=['GET'])

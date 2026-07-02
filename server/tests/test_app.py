@@ -115,6 +115,7 @@ def test_logout_clears_session(client):
 
 def test_analyze_input_with_assignments(client, monkeypatch):
     import api
+    import json
     from factories import UserFactory, AssignmentFactory
 
     assignment = AssignmentFactory(
@@ -131,13 +132,26 @@ def test_analyze_input_with_assignments(client, monkeypatch):
     class FakeChatCompletions:
         def create(self, **kwargs):
             fake_completion_calls.append(kwargs)
-            class MockMessage:
-                content = "Math topic" if "Extract the main topic" in kwargs.get("messages", [{}])[0].get("content", "") else "This is a great study answer."
-            class MockChoice:
-                message = MockMessage()
-            class MockResponse:
-                choices = [MockChoice()]
-            return MockResponse()
+            is_stream = kwargs.get('stream', False)
+            if not is_stream:
+                class MockMessage:
+                    content = "Math topic" if "Extract the main topic" in kwargs.get("messages", [{}])[0].get("content", "") else "This is a great study answer."
+                class MockChoice:
+                    message = MockMessage()
+                class MockResponse:
+                    choices = [MockChoice()]
+                return MockResponse()
+            else:
+                class MockDelta:
+                    def __init__(self, text):
+                        self.content = text
+                class MockChoice:
+                    def __init__(self, text):
+                        self.delta = MockDelta(text)
+                class MockChunk:
+                    def __init__(self, text):
+                        self.choices = [MockChoice(text)]
+                return [MockChunk("This is a great "), MockChunk("study answer.")]
 
     class FakeClient:
         def __init__(self, api_key):
@@ -164,9 +178,17 @@ def test_analyze_input_with_assignments(client, monkeypatch):
     )
 
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert data['answer'] == "This is a great study answer."
-    assert data['material'] == ["http://mock-url.com"]
+    assert resp.mimetype == 'application/x-ndjson'
+    
+    lines = resp.data.decode('utf-8').split('\n')
+    lines = [line.strip() for line in lines if line.strip()]
+    chunks = [json.loads(line) for line in lines]
+    
+    content_text = "".join(chunk["text"] for chunk in chunks if chunk["type"] == "content")
+    assert content_text == "This is a great study answer."
+    
+    materials = next(chunk["urls"] for chunk in chunks if chunk["type"] == "material")
+    assert materials == ["http://mock-url.com"]
 
     assert len(fake_completion_calls) > 0
     chat_prompt = fake_completion_calls[0]["messages"][0]["content"]
@@ -177,6 +199,7 @@ def test_analyze_input_with_assignments(client, monkeypatch):
 
 def test_analyze_input_with_none_topic(client, monkeypatch):
     import api
+    import json
     from factories import UserFactory
 
     UserFactory(id='u2', email='b@c.com').create()
@@ -186,13 +209,26 @@ def test_analyze_input_with_none_topic(client, monkeypatch):
     class FakeChatCompletions:
         def create(self, **kwargs):
             fake_completion_calls.append(kwargs)
-            class MockMessage:
-                content = "NONE" if "Analyze the user's input." in kwargs.get("messages", [{}])[0].get("content", "") else "Hello there!"
-            class MockChoice:
-                message = MockMessage()
-            class MockResponse:
-                choices = [MockChoice()]
-            return MockResponse()
+            is_stream = kwargs.get('stream', False)
+            if not is_stream:
+                class MockMessage:
+                    content = "NONE" if "Analyze the user's input." in kwargs.get("messages", [{}])[0].get("content", "") else "Hello there!"
+                class MockChoice:
+                    message = MockMessage()
+                class MockResponse:
+                    choices = [MockChoice()]
+                return MockResponse()
+            else:
+                class MockDelta:
+                    def __init__(self, text):
+                        self.content = text
+                class MockChoice:
+                    def __init__(self, text):
+                        self.delta = MockDelta(text)
+                class MockChunk:
+                    def __init__(self, text):
+                        self.choices = [MockChoice(text)]
+                return [MockChunk("Hello there!")]
 
     class FakeClient:
         def __init__(self, api_key):
@@ -219,13 +255,22 @@ def test_analyze_input_with_none_topic(client, monkeypatch):
     )
 
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert data['answer'] == "Hello there!"
-    assert data['material'] == []
+    assert resp.mimetype == 'application/x-ndjson'
+    
+    lines = resp.data.decode('utf-8').split('\n')
+    lines = [line.strip() for line in lines if line.strip()]
+    chunks = [json.loads(line) for line in lines]
+    
+    content_text = "".join(chunk["text"] for chunk in chunks if chunk["type"] == "content")
+    assert content_text == "Hello there!"
+    
+    materials = next(chunk["urls"] for chunk in chunks if chunk["type"] == "material")
+    assert materials == []
 
 
 def test_analyze_input_with_history(client, monkeypatch):
     import api
+    import json
     from factories import UserFactory
 
     UserFactory(id='u3', email='c@d.com').create()
@@ -235,13 +280,26 @@ def test_analyze_input_with_history(client, monkeypatch):
     class FakeChatCompletions:
         def create(self, **kwargs):
             fake_completion_calls.append(kwargs)
-            class MockMessage:
-                content = "NONE" if "Analyze the user's input." in kwargs.get("messages", [{}])[0].get("content", "") else "Response with history"
-            class MockChoice:
-                message = MockMessage()
-            class MockResponse:
-                choices = [MockChoice()]
-            return MockResponse()
+            is_stream = kwargs.get('stream', False)
+            if not is_stream:
+                class MockMessage:
+                    content = "NONE" if "Analyze the user's input." in kwargs.get("messages", [{}])[0].get("content", "") else "Response with history"
+                class MockChoice:
+                    message = MockMessage()
+                class MockResponse:
+                    choices = [MockChoice()]
+                return MockResponse()
+            else:
+                class MockDelta:
+                    def __init__(self, text):
+                        self.content = text
+                class MockChoice:
+                    def __init__(self, text):
+                        self.delta = MockDelta(text)
+                class MockChunk:
+                    def __init__(self, text):
+                        self.choices = [MockChoice(text)]
+                return [MockChunk("Response with history")]
 
     class FakeClient:
         def __init__(self, api_key):
@@ -272,8 +330,14 @@ def test_analyze_input_with_history(client, monkeypatch):
     )
 
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert data['answer'] == "Response with history"
+    assert resp.mimetype == 'application/x-ndjson'
+    
+    lines = resp.data.decode('utf-8').split('\n')
+    lines = [line.strip() for line in lines if line.strip()]
+    chunks = [json.loads(line) for line in lines]
+    
+    content_text = "".join(chunk["text"] for chunk in chunks if chunk["type"] == "content")
+    assert content_text == "Response with history"
 
     assert len(fake_completion_calls) > 0
     answer_call = next(call for call in fake_completion_calls if len(call["messages"]) > 2)

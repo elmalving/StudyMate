@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import httpClient from '../httpClient';
 
 const Chat = () => {
     const {
@@ -11,6 +10,8 @@ const Chat = () => {
         setChatVisible: setIsVisible,
     } = useOutletContext();
     const [message, setInput] = useState('');
+    const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+    const [loadingDots, setLoadingDots] = useState('.');
     const messagesEndRef = useRef(null);
 
     const handleSubmit = (e) => {
@@ -23,40 +24,167 @@ const Chat = () => {
             try {
                 setIsVisible(false);
                 setMessages((prev) => [...prev, { sender: 'user', text: message }]);
-                const responce = await httpClient.post(
-                    '//localhost:5000/analyze_input',
-                    {
+                setIsWaitingForResponse(true);
+
+                const response = await fetch('//localhost:5000/analyze_input', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
                         message,
                         history: messages,
-                    }
-                );
-                setMessages((prev) => [...prev, { sender: 'assistant', text: responce.data['answer'] }]);
-                if (
-                    responce.data['answer'] !=
-                    'Bot was unable to provide a satisfactory answer.'
-                ) {
-                    responce.data['material'].forEach((e) => {
-                        setMessages((prev) => [...prev, { sender: 'assistant', text: e }]);
-                    });
-                }
-                setInput('');
-            } catch (e) {
-                if (e.response) {
-                    if (e.response.status === 401) {
+                    }),
+                    credentials: 'include',
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
                         alert('Invalid credentials.');
                     } else {
                         console.log('Server error.');
                     }
-                } else {
-                    console.error(e);
+                    setIsWaitingForResponse(false);
+                    return;
                 }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let done = false;
+                let partialLine = '';
+                let hasStartedAssistantMessage = false;
+
+                while (!done) {
+                    const { value, done: doneReading } = await reader.read();
+                    done = doneReading;
+                    if (value) {
+                        const chunk = decoder.decode(value, { stream: !done });
+                        const lines = (partialLine + chunk).split('\n');
+                        partialLine = lines.pop() || '';
+
+                        for (const line of lines) {
+                            if (line.trim()) {
+                                const data = JSON.parse(line);
+                                if (data.type === 'content') {
+                                    if (!hasStartedAssistantMessage) {
+                                        hasStartedAssistantMessage = true;
+                                        setIsWaitingForResponse(false);
+                                        setMessages((prev) => [...prev, { sender: 'assistant', text: data.text }]);
+                                    } else {
+                                        setMessages((prev) => {
+                                            const lastMsgIndex = prev.length - 1;
+                                            if (lastMsgIndex >= 0 && prev[lastMsgIndex].sender === 'assistant') {
+                                                const updated = [...prev];
+                                                updated[lastMsgIndex] = {
+                                                    ...updated[lastMsgIndex],
+                                                    text: updated[lastMsgIndex].text + data.text,
+                                                };
+                                                return updated;
+                                            }
+                                            return prev;
+                                        });
+                                    }
+                                } else if (data.type === 'material') {
+                                    if (data.urls && data.urls.length > 0) {
+                                        setMessages((prev) => {
+                                            const hasFallback = prev.some(
+                                                (msg) => msg.sender === 'assistant' && msg.text === 'Bot was unable to provide a satisfactory answer.'
+                                            );
+                                            if (hasFallback) {
+                                                return prev;
+                                            }
+                                            const updated = [...prev];
+                                            data.urls.forEach((url) => {
+                                                updated.push({ sender: 'assistant', text: url });
+                                            });
+                                            return updated;
+                                        });
+                                    }
+                                } else if (data.type === 'error') {
+                                    setIsWaitingForResponse(false);
+                                    setMessages((prev) => [...prev, { sender: 'assistant', text: data.text }]);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (partialLine.trim()) {
+                    try {
+                        const data = JSON.parse(partialLine);
+                        if (data.type === 'content') {
+                            if (!hasStartedAssistantMessage) {
+                                hasStartedAssistantMessage = true;
+                                setIsWaitingForResponse(false);
+                                setMessages((prev) => [...prev, { sender: 'assistant', text: data.text }]);
+                            } else {
+                                setMessages((prev) => {
+                                    const lastMsgIndex = prev.length - 1;
+                                    if (lastMsgIndex >= 0 && prev[lastMsgIndex].sender === 'assistant') {
+                                        const updated = [...prev];
+                                        updated[lastMsgIndex] = {
+                                            ...updated[lastMsgIndex],
+                                            text: updated[lastMsgIndex].text + data.text,
+                                        };
+                                        return updated;
+                                    }
+                                    return prev;
+                                });
+                            }
+                        } else if (data.type === 'material') {
+                            if (data.urls && data.urls.length > 0) {
+                                setMessages((prev) => {
+                                    const hasFallback = prev.some(
+                                        (msg) => msg.sender === 'assistant' && msg.text === 'Bot was unable to provide a satisfactory answer.'
+                                    );
+                                    if (hasFallback) {
+                                        return prev;
+                                    }
+                                    const updated = [...prev];
+                                    data.urls.forEach((url) => {
+                                        updated.push({ sender: 'assistant', text: url });
+                                    });
+                                    return updated;
+                                });
+                            }
+                        } else if (data.type === 'error') {
+                            setIsWaitingForResponse(false);
+                            setMessages((prev) => [...prev, { sender: 'assistant', text: data.text }]);
+                        }
+                    } catch (e) {
+                        // ignore malformed line
+                    }
+                }
+
+                setIsWaitingForResponse(false);
+                setInput('');
+            } catch (e) {
+                setIsWaitingForResponse(false);
+                console.error(e);
             }
         }
     };
 
     useEffect(() => {
+        let interval;
+        if (isWaitingForResponse) {
+            setLoadingDots('.');
+            interval = setInterval(() => {
+                setLoadingDots((prev) => {
+                    if (prev === '.') return '..';
+                    if (prev === '..') return '...';
+                    return '.';
+                });
+            }, 500);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isWaitingForResponse]);
+
+    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, isWaitingForResponse]);
 
     return (
         <div className="content">
@@ -87,6 +215,11 @@ const Chat = () => {
                                     </div>
                                 );
                             })}
+                            {isWaitingForResponse && (
+                                <div className="message-bubble assistant">
+                                    {loadingDots}
+                                </div>
+                            )}
                             <div ref={messagesEndRef}></div>
                         </div>
                     </div>

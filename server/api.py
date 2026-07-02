@@ -129,3 +129,66 @@ class AIAssistant:
             return
 
         self.current_answer = answer
+
+    def answer_question_stream(self, question, history=None, schedule_and_progress_context=None):
+        assistant_prompt = (
+            "You are StudyMate AI, an expert, encouraging, and highly professional study assistant and tutor. "
+            "Your goal is to help students learn conveniently and efficiently.\n\n"
+            "Strict Guidelines:\n"
+            "1. Switch to study assistant mode and don't participate in non-study related conversations. "
+            "If the question is not related to studies, politely redirect the student to focus on their course material.\n"
+            "2. Answer as accurately, clearly, and helpful as possible. Use simple, structured explanations suitable for a student.\n"
+            "3. If you can't answer, type I dont know answer on this question, I'm sorry."
+        )
+
+        if schedule_and_progress_context:
+            assistant_prompt += (
+                f"\n\nStudent's Schedule and Progress Context:\n{schedule_and_progress_context}\n"
+                "4. Personalize your assistance and responses based on the student's schedule and progress context above. "
+                "Acknowledge their active subjects, difficulty levels, and current progress (such as completed assignments or grades) "
+                "where relevant, offering targeted study tips or positive reinforcement."
+            )
+
+        messages = [
+            {"role": "system", "content": assistant_prompt}
+        ]
+
+        if history:
+            for msg in history:
+                role = "user" if msg.get("sender") == "user" else "assistant"
+                messages.append({"role": role, "content": msg.get("text", "")})
+
+        messages.append({"role": "user", "content": question})
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=1024,
+            temperature=0.7,
+            stream=True,
+        )
+
+        buffer = ""
+        is_sorry = False
+
+        for chunk in response:
+            if chunk.choices and len(chunk.choices) > 0 and chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                if not is_sorry:
+                    if len(buffer) < 50:
+                        buffer += content
+                        if len(buffer) >= 50:
+                            if "I'm sorry" in buffer:
+                                yield "Bot was unable to provide a satisfactory answer."
+                                is_sorry = True
+                            else:
+                                yield buffer
+                                buffer = ""
+                    else:
+                        yield content
+
+        if not is_sorry and buffer:
+            if "I'm sorry" in buffer:
+                yield "Bot was unable to provide a satisfactory answer."
+            else:
+                yield buffer
